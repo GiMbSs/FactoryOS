@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Excluir Pedido{% endblock %}
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
+    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'comercial:pedido_list' %}">Pedidos</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Excluir</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h2 class="mb-4 fw-bold text-danger">Confirmação de Exclusão</h2>
+                <p>Tem certeza que deseja excluir o pedido <strong>#{{ object.id }}</strong> do cliente <strong>{{ object.cliente }}</strong>?</p>
+                <form method="post">{% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Sim, excluir</button>
+                    <a href="{% url 'comercial:pedido_list' %}" class="btn btn-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

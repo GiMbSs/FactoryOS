@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Cadastro de Produto Acabado{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
+    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'producao:produto_list' %}">Produtos Acabados</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Cadastro</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h2 class="mb-4 fw-bold text-primary">Cadastro de Produto Acabado</h2>
+                <form method="post" autocomplete="off">
+                    {% csrf_token %}
+                    {% for field in form %}
+                        <div class="mb-3">
+                            <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                            {% render_field field class="form-control" %}
+                            {% if field.help_text %}
+                                <div class="form-text">{{ field.help_text }}</div>
+                            {% endif %}
+                            {% for error in field.errors %}
+                                <div class="text-danger small">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <a href="{% url 'producao:produto_list' %}" class="btn btn-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

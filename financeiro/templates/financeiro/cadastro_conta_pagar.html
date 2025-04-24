@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Cadastro de Conta a Pagar{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
+    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'financeiro:conta_pagar_list' %}">Contas a Pagar</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Nova Conta</li>
+  </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h2 class="mb-4 fw-bold text-primary">Nova Conta a Pagar</h2>
+                {% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+<form method="post" autocomplete="off">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="fornecedor" class="form-label">Fornecedor</label>
+                        {% render_field form.fornecedor class="form-control" %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="valor" class="form-label">Valor (R$)</label>
+                        {% render_field form.valor class="form-control" step="0.01" %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="data_vencimento" class="form-label">Data de Vencimento</label>
+                        {% render_field form.data_vencimento class="form-control" type="date" %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        {% render_field form.status class="form-select" %}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <a href="{% url 'financeiro:conta_pagar_list' %}" class="btn btn-secondary">Cancelar</a>
+                </form>
+            </div>
+
+            </div>
+            
+            <div class="mb-3">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Logs do Sistema{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Logs do Sistema</h2>
+    <pre style="background:#222;color:#eee;padding:1em;border-radius:6px;max-height:70vh;overflow:auto;font-size:0.95em;">
+        {% for line in log_lines %}{{ line }}
+{% endfor %}
+    </pre>
+</div>
+{% endblock %}

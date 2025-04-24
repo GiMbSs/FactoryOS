@@ -1,0 +1,13 @@
+/* CSS básico para o sistema */
+body {
+    padding-top: 20px;
+    font-family: Arial, sans-serif;
+}
+
+.navbar {
+    margin-bottom: 20px;
+}
+
+.card {
+    margin-bottom: 20px;
+}

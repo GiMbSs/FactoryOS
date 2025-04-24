@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <h2>Ordens em Produção</h2>
+        <div class="list-group">
+            {% for ordem in ordens_andamento %}
+            <div class="list-group-item">
+                <h5>Ordem #{{ ordem.id }} - {{ ordem.produto.nome }}</h5>
+                <p>Quantidade: {{ ordem.quantidade }}</p>
+                <p>Início: {{ ordem.data_inicio|date:"d/m/Y" }}</p>
+            </div>
+            {% empty %}
+            <div class="alert alert-info">Nenhuma ordem em produção no momento</div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <h2>Alertas de Estoque</h2>
+        {% if alertas_estoque %}
+        <div class="alert alert-warning">
+            <ul>
+                {% for alerta in alertas_estoque %}
+                <li>
+                    {{ alerta.materia_prima }} - 
+                    {{ alerta.quantidade_atual }} {{ alerta.unidade_medida }} 
+                    (mínimo: {{ alerta.estoque_minimo }})
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <div class="alert alert-success">Nenhum alerta de estoque</div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

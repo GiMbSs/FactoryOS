@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
+    <li class="breadcrumb-item"><a href="{% url 'financeiro:dashboard' %}">Dashboard</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Financeiro</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <h2 class="fw-bold mb-4">Dashboard Financeiro</h2>
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-primary shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Contas a Pagar Pendentes</h6>
+                    <h3>{{ contas_pagar_pendentes }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-success shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Contas a Pagar Pagas</h6>
+                    <h3>{{ contas_pagar_pagas }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-warning shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Contas a Receber Pendentes</h6>
+                    <h3>{{ contas_receber_pendentes }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-info shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Contas a Receber Recebidas</h6>
+                    <h3>{{ contas_receber_recebidas }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    Situação Contas a Pagar
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoPagar"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    Situação Contas a Receber
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoReceber"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    Fluxo de Caixa
+                </div>
+                <div class="card-body">
+                    <p><strong>Saldo atual:</strong> R$ {{ saldo|floatformat:2 }}</p>
+                    <p><strong>Total a pagar pendente:</strong> R$ {{ valor_pagar_pendente|floatformat:2 }}</p>
+                    <p><strong>Total pago:</strong> R$ {{ valor_pagar_pago|floatformat:2 }}</p>
+                    <p><strong>Total a receber pendente:</strong> R$ {{ valor_receber_pendente|floatformat:2 }}</p>
+                    <p><strong>Total recebido:</strong> R$ {{ valor_receber_recebido|floatformat:2 }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const graficoPagar = document.getElementById('graficoPagar').getContext('2d');
+    new Chart(graficoPagar, {
+        type: 'pie',
+        data: {
+            labels: JSON.parse(document.getElementById('labelsPagar').textContent),
+            datasets: [{
+                data: JSON.parse(document.getElementById('dataPagar').textContent),
+                backgroundColor: ['#0d6efd', '#198754', '#dc3545'],
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+    const graficoReceber = document.getElementById('graficoReceber').getContext('2d');
+    new Chart(graficoReceber, {
+        type: 'pie',
+        data: {
+            labels: JSON.parse(document.getElementById('labelsReceber').textContent),
+            datasets: [{
+                data: JSON.parse(document.getElementById('dataReceber').textContent),
+                backgroundColor: ['#ffc107', '#0dcaf0', '#dc3545'],
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+<script id="labelsPagar" type="application/json">{{ grafico_pagar.labels|safe }}</script>
+<script id="dataPagar" type="application/json">{{ grafico_pagar.data|safe }}</script>
+<script id="labelsReceber" type="application/json">{{ grafico_receber.labels|safe }}</script>
+<script id="dataReceber" type="application/json">{{ grafico_receber.data|safe }}</script>
+{% endblock %}

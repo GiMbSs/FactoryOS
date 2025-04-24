@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% load i18n widget_tweaks %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
+    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'producao:lista_ordens' %}">Ordens de Produção</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Nova Ordem</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h2 class="mb-4 fw-bold text-primary">Nova Ordem de Produção</h2>
+                <form method="post" autocomplete="off">
+    {% if form.errors %}
+        <div class="alert alert-danger">
+            <ul class="mb-0">
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <h2>{% trans "Nova Ordem de Produção" %}</h2>
+        <form method="post" id="ordemForm">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                {{ form.produto.label_tag }}
+                {{ form.produto|add_class:"form-select" }}
+            </div>
+
+            <div class="mb-3">
+    {{ form.quantidade.label_tag }}
+    {{ form.quantidade|add_class:"form-control" }}
+</div>
+<input type="hidden" name="data_inicio" id="id_data_inicio" />
+<div class="mb-3">
+    {{ form.status.label_tag }}
+    {{ form.status|add_class:"form-select" }}
+</div>
+
+            <div class="mb-3">
+    <label>{% trans "Matérias-Primas Necessárias" %}</label>
+    <div id="materiasPrimasContainer" class="border p-3 mb-3">
+        <p class="text-muted">{% trans "Selecione um produto e quantidade para ver as matérias-primas necessárias" %}</p>
+    </div>
+</div>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Preencher data_inicio automaticamente
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('id_data_inicio').value = today;
+
+        function atualizarMateriasPrimas() {
+            const produtoId = document.getElementById('id_produto').value;
+            const quantidade = document.getElementById('id_quantidade').value;
+            const container = document.getElementById('materiasPrimasContainer');
+            if (!produtoId || !quantidade || quantidade <= 0) {
+                container.innerHTML = '<p class="text-muted">Selecione um produto e quantidade para ver as matérias-primas necessárias</p>';
+                return;
+            }
+            fetch(`/producao/api/produtos/${produtoId}/materias-primas/?quantidade=${quantidade}`)
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.length === 0) {
+                        container.innerHTML = '<p class="text-danger">Nenhuma matéria-prima cadastrada para este produto.</p>';
+                        return;
+                    }
+                    let html = '<ul class="mb-0">';
+                    data.forEach(item => {
+                        html += `<li><b>${item.materia_prima}</b>: ${item.quantidade_total} ${item.unidade}</li>`;
+                    });
+                    html += '</ul>';
+                    container.innerHTML = html;
+                })
+                .catch(() => {
+                    container.innerHTML = '<p class="text-danger">Erro ao buscar matérias-primas.</p>';
+                });
+        }
+        document.getElementById('id_produto').addEventListener('change', atualizarMateriasPrimas);
+        document.getElementById('id_quantidade').addEventListener('input', atualizarMateriasPrimas);
+    });
+</script>
+    </div>
+</div>
+
+            <div class="mb-3">
+                {{ form.responsavel.label_tag }}
+                {{ form.responsavel|add_class:"form-select" }}
+            </div>
+
+            <button type="submit" class="btn btn-primary">{% trans "Salvar" %}</button>
+        </form>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const produtoSelect = document.querySelector('#id_produto');
+    const materiasContainer = document.querySelector('#materiasPrimasContainer');
+    
+    produtoSelect.addEventListener('change', function() {
+        const produtoId = this.value;
+        if (produtoId) {
+            fetch(`/producao/api/api/produtos/${produtoId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    let html = '<table class="table"><thead><tr><th>Material</th><th>Quantidade</th></tr></thead><tbody>';
+                    data.materias_primas.forEach(item => {
+                        html += `<tr>
+                            <td>${item.materia_prima.nome}</td>
+                            <td>${item.quantidade_utilizada} ${item.materia_prima.unidade_medida}</td>
+                        </tr>`;
+                    });
+                    html += '</tbody></table>';
+                    materiasContainer.innerHTML = html;
+                });
+        } else {
+            materiasContainer.innerHTML = '<p class="text-muted">{% trans "Selecione um produto para ver as matérias-primas necessárias" %}</p>';
+        }
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

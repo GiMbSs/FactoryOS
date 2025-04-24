@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Excluir Matéria-Prima{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <div class="card shadow-sm border-0 mt-5">
+            <div class="card-body">
+                <h2 class="mb-4 fw-bold text-danger">Excluir Matéria-Prima</h2>
+                <p>Tem certeza que deseja excluir a matéria-prima <strong>{{ object.nome }}</strong>?</p>
+                <form method="post">{% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Sim, excluir</button>
+                    <a href="{% url 'estoque:estoque_list' %}" class="btn btn-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

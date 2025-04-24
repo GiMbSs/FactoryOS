@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Cadastro de Ordem de Produção{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <h2 class="mb-4">Cadastro de Ordem de Produção</h2>
+        
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="produto" class="form-label">Produto</label>
+                {% render_field form.produto class="form-control" %}
+            </div>
+            
+            <div class="mb-3">
+                <label for="quantidade" class="form-label">Quantidade</label>
+                {% render_field form.quantidade class="form-control" min="1" %}
+            </div>
+            
+            <div class="mb-3">
+                <label for="data_inicio" class="form-label">Data de Início</label>
+                {% render_field form.data_inicio class="form-control" type="date" %}
+            </div>
+            
+            <div class="mb-3">
+                <label for="status" class="form-label">Status</label>
+                {% render_field form.status class="form-select" %}
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Salvar</button>
+            <a href="{% url 'producao:ordem_list' %}" class="btn btn-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

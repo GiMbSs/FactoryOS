@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Produtos{% endblock %}
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
+    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Produção</li>
+    <li class="breadcrumb-item active" aria-current="page">Produtos</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold">Produtos</h2>
+        <a href="{% url 'producao:produto_create' %}" class="btn btn-success">
+            <i class="bi bi-plus-lg"></i> Novo Produto
+        </a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Descrição</th>
+                    <th>SKU</th>
+                    <th>Tipo</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for produto in produtos %}
+                <tr>
+                    <td>{{ produto.nome }}</td>
+                    <td>{{ produto.descricao }}</td>
+                    <td>{{ produto.codigo_sku }}</td>
+                    <td>{{ produto.get_tipo_display }}</td>
+                    <td>
+                        <a href="#" class="btn btn-sm btn-info">Editar</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">Nenhum produto cadastrado</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

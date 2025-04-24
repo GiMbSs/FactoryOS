@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% block title %}Cadastro de Matéria-Prima{% endblock %}
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
+    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'estoque:estoque_list' %}">Estoque</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Nova Matéria-Prima</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7 col-md-9">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h2 class="mb-4 fw-bold text-primary">Cadastro de Matéria-Prima</h2>
+                {% if form.errors %}
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                <form method="post" autocomplete="off">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome</label>
+                        {% render_field form.nome class="form-control" %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="descricao" class="form-label">Descrição</label>
+                        {% render_field form.descricao class="form-control" %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="tipo" class="form-label">Tipo</label>
+                        {% render_field form.tipo class="form-select" %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="unidade_medida" class="form-label">Unidade de Medida</label>
+                        {% render_field form.unidade_medida class="form-select" %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="custo_unitario" class="form-label">Custo Unitário</label>
+                        {% render_field form.custo_unitario class="form-control" %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="estoque_minimo" class="form-label">Estoque Mínimo</label>
+                        {% render_field form.estoque_minimo class="form-control" %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="quantidade_estoque" class="form-label">Estoque Atual</label>
+                        {% render_field form.quantidade_estoque class="form-control" %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="ativo" class="form-label">Ativo</label>
+                        {% render_field form.ativo class="form-check-input" %}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <a href="{% url 'estoque:estoque_list' %}" class="btn btn-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

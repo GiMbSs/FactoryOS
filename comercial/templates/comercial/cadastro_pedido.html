@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+{% block title %}Cadastro de Pedido{% endblock %}
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
+    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'comercial:pedido_list' %}">Pedidos</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Cadastro</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+        <div class="card shadow-sm border-0">
+            <div class="card-body">
+                <h2 class="mb-4 fw-bold text-primary">Cadastro de Pedido</h2>
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                <form method="post" autocomplete="off">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="cliente" class="form-label">Cliente</label>
+                        {% render_field form.cliente class="form-select" %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="vendedor" class="form-label">Vendedor</label>
+                        {% render_field form.vendedor class="form-select" %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="valor_total" class="form-label">Valor Total</label>
+                        {% render_field form.valor_total class="form-control" %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        {% render_field form.status class="form-select" %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="observacoes" class="form-label">Observações</label>
+                        {% render_field form.observacoes class="form-control" %}
+                    </div>
+
+                    <h5 class="mt-4">Itens do Pedido</h5>
+                    <table class="table table-bordered align-middle">
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>Quantidade</th>
+                                <th>Preço Unitário</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{ itens_formset.management_form }}
+                            {% for form in itens_formset %}
+                            <tr>
+                                {{ form.id }}
+                                <td>{% render_field form.produto class="form-select" %}</td>
+                                <td>{% render_field form.quantidade class="form-control" %}</td>
+                                <td>{% render_field form.preco_unitario class="form-control" %}</td>
+                                <td>{% if form.instance.pk %}{% render_field form.DELETE %} Remover{% endif %}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                    <a href="{% url 'comercial:pedido_list' %}" class="btn btn-secondary">Cancelar</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

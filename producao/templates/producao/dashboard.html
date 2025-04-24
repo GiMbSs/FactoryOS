@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
+    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
+    <li class="breadcrumb-item active" aria-current="page">Produção</li>
+  </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <h2 class="fw-bold mb-4">Dashboard Produção</h2>
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card text-white bg-primary shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Ordens no Mês</h6>
+                    <h3>{{ total_ordens_mes }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-white bg-success shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Produzido no Mês</h6>
+                    <h3>{{ total_produzido_mes }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card text-white bg-warning shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title">Alertas de Estoque</h6>
+                    <h3>{{ alertas_estoque|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">{% trans "Produção Mensal" %}</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="producaoChart" height="300"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script id="meses" type="application/json">{{ meses|safe }}</script>
+<script id="quantidades" type="application/json">{{ quantidades|safe }}</script>
+<script>
+    const meses = JSON.parse(document.getElementById('meses').textContent);
+    const quantidades = JSON.parse(document.getElementById('quantidades').textContent);
+    const ctx = document.getElementById('producaoChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: meses,
+            datasets: [{
+                label: 'Ordens Finalizadas',
+                data: quantidades,
+                backgroundColor: '#0d6efd',
+                borderColor: '#0d6efd',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 }
+                }
+            }
+        }
+    });
+</script>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h5>{% trans "Alertas de Estoque" %}</h5>
+                </div>
+                <div class="card-body">
+                    {% if alertas_estoque %}
+                    <ul class="list-group">
+                    {% for alerta in alertas_estoque %}
+                    <li class="list-group-item">
+                        {{ alerta.materia_prima }} - 
+                        {{ alerta.quantidade_atual }} {{ alerta.unidade_medida }}
+                        (mín: {{ alerta.estoque_minimo }})
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <p>{% trans "Nenhum alerta de estoque" %}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <h2>{% trans "Ordens em Andamento" %}</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>{% trans "Número" %}</th>
+                    <th>{% trans "Produto" %}</th>
+                    <th>{% trans "Quantidade" %}</th>
+                    <th>{% trans "Status" %}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ordem in ordens_andamento %}
+                <tr>
+                    <td><a href="{{ ordem.get_absolute_url }}">OP-{{ ordem.id }}</a></td>
+                    <td>{{ ordem.produto.nome }}</td>
+                    <td>{{ ordem.quantidade }}</td>
+                    <td>{{ ordem.get_status_display }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">{% trans "Nenhuma ordem em andamento" %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gráfico de produção mensal
+    const ctx = document.getElementById('producaoChart');
+    if (ctx) {
+        new Chart(ctx.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: JSON.parse('{{ meses|escapejs }}'),
+                datasets: [{
+                    label: '{% trans "Quantidade Produzida" %}',
+                    data: JSON.parse('{{ quantidades|escapejs }}'),
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
+{% endblock %}
