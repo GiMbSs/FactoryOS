@@ -66,21 +66,55 @@ class ProdutoListView(LoginRequiredMixin, ListView):
             
         return context
 
+from .forms import ProdutoMateriaPrimaFormSet
+
 class ProdutoCreateView(LoginRequiredMixin, CreateView):
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        registrar_log(self.request, 'Produção', f'Cadastrou novo produto: {self.object.nome}')
-        return response
     model = Produto
     form_class = ProdutoForm
     template_name = 'producao/cadastro_produto.html'
     success_url = reverse_lazy('producao:produto_list')
 
-class ProdutoUpdateView(LoginRequiredMixin, UpdateView):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if self.request.POST:
+            context['materias_formset'] = ProdutoMateriaPrimaFormSet(self.request.POST)
+        else:
+            context['materias_formset'] = ProdutoMateriaPrimaFormSet()
+        return context
+
     def form_valid(self, form):
-        response = super().form_valid(form)
-        registrar_log(self.request, 'Produção', f'Editou produto: {self.object.nome}')
-        return response
+        context = self.get_context_data()
+        materias_formset = context['materias_formset']
+        if materias_formset.is_valid():
+            self.object = form.save()
+            materias_formset.instance = self.object
+            materias_formset.save()
+            registrar_log(self.request, 'Produção', f'Cadastrou novo produto: {self.object.nome}')
+            return super().form_valid(form)
+        else:
+            return self.form_invalid(form)
+
+class ProdutoUpdateView(LoginRequiredMixin, UpdateView):
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from .forms import ProdutoMateriaPrimaFormSet
+        if self.request.POST:
+            context['materias_formset'] = ProdutoMateriaPrimaFormSet(self.request.POST, instance=self.object)
+        else:
+            context['materias_formset'] = ProdutoMateriaPrimaFormSet(instance=self.object)
+        return context
+
+    def form_valid(self, form):
+        context = self.get_context_data()
+        materias_formset = context['materias_formset']
+        if materias_formset.is_valid():
+            self.object = form.save()
+            materias_formset.instance = self.object
+            materias_formset.save()
+            registrar_log(self.request, 'Produção', f'Editou produto: {self.object.nome}')
+            return super().form_valid(form)
+        else:
+            return self.form_invalid(form)
     model = Produto
     form_class = ProdutoForm
     template_name = 'producao/cadastro_produto.html'

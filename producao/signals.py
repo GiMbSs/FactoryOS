@@ -2,10 +2,26 @@ from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from django.core.exceptions import ValidationError
 import logging
+from django.utils import timezone
 from .models import OrdemProducao, ProdutoMateriaPrima
 from estoque.models import MovimentacaoEstoque, SaldoEstoque, ProdutoEstoque
 
 logger = logging.getLogger(__name__)
+
+@receiver(pre_save, sender=OrdemProducao)
+def gerenciar_datas_ordem(sender, instance, **kwargs):
+    # Definir data_inicio quando a ordem é criada
+    if not instance.pk:
+        instance.data_inicio = timezone.now()
+    
+    # Definir data_fim quando o status muda para FINALIZADA ou CANCELADA
+    if instance.pk:
+        try:
+            original = OrdemProducao.objects.get(pk=instance.pk)
+            if original.status != instance.status and instance.status in ['FINALIZADA', 'CANCELADA']:
+                instance.data_fim = timezone.now()
+        except OrdemProducao.DoesNotExist:
+            pass
 
 @receiver(pre_save, sender=OrdemProducao)
 def salvar_status_anterior(sender, instance, **kwargs):
@@ -13,13 +29,10 @@ def salvar_status_anterior(sender, instance, **kwargs):
         try:
             original = OrdemProducao.objects.get(pk=instance.pk)
             instance._status_anterior = original.status
-            
         except OrdemProducao.DoesNotExist:
             instance._status_anterior = None
-            
     else:
         instance._status_anterior = None
-        
 
 @receiver(pre_save, sender=OrdemProducao)
 def validar_estoque_antes_producao(sender, instance, **kwargs):
@@ -38,7 +51,6 @@ def validar_estoque_antes_producao(sender, instance, **kwargs):
 
 @receiver(post_save, sender=OrdemProducao)
 def atualizar_estoque_apos_producao(sender, instance, created, **kwargs):
-    
     # Detectar mudança de status
     try:
         # Buscar ordem anterior para saber o status antes da alteração
@@ -113,6 +125,5 @@ def atualizar_estoque_apos_producao(sender, instance, created, **kwargs):
             
             logger.info(f"Produto acabado lançado em estoque para Ordem de Produção #{instance.id} (FINALIZADA). Produto: {produto} | Antes: {quantidade_antes} | Adicionado: {quantidade} | Depois: {saldo_produto.quantidade_atual}")
     except Exception as e:
-        
         logger.error(f"Erro ao atualizar estoque: {str(e)}")
         raise

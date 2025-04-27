@@ -85,6 +85,109 @@
                             {% endif %}
                         </div>
                         
+                        <hr class="my-4">
+                        <div id="materias-primas-formset">
+                            {% if materias_formset.non_form_errors %}
+                                <div class="alert alert-danger">{{ materias_formset.non_form_errors }}</div>
+                            {% endif %}
+                            
+                            <div class="card border-0 shadow-sm mb-3">
+                                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-list-ul"></i> Matérias-Primas do Produto</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-striped mb-0" id="tabela-materias">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Matéria-Prima</th>
+                                                    <th width="120">Quantidade</th>
+                                                    <th width="180">Observações</th>
+                                                    <th width="80">Ações</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="materias-tbody">
+                                                {{ materias_formset.management_form }}
+                                                {% for form in materias_formset %}
+                                                <tr class="materia-row{% if form.instance.pk and form.DELETE.value %} table-danger text-decoration-line-through{% endif %}">
+                                                    {{ form.id }}
+                                                    <td>
+                                                        {% render_field form.materia_prima class="form-select" %}
+                                                        {% if form.materia_prima.errors %}
+                                                        <div class="invalid-feedback d-block">{{ form.materia_prima.errors }}</div>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        <div class="input-group">
+                                                            {% render_field form.quantidade_utilizada class="form-control" min="1" %}
+                                                            <span class="input-group-text">un</span>
+                                                        </div>
+                                                        {% if form.quantidade_utilizada.errors %}
+                                                        <div class="invalid-feedback d-block">{{ form.quantidade_utilizada.errors }}</div>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% render_field form.observacoes class="form-control" rows="2" style="resize: vertical" %}
+                                                        {% if form.observacoes.errors %}
+                                                        <div class="invalid-feedback d-block">{{ form.observacoes.errors }}</div>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td class="text-center">
+                                                        {% if materias_formset.can_delete %}
+                                                        <div class="form-check">
+                                                            {% render_field form.DELETE class="form-check-input item-delete" id=form.DELETE.id_for_label %}
+                                                            <label class="form-check-label" for="{{ form.DELETE.id_for_label }}">
+                                                                <i class="bi bi-trash text-danger"></i>
+                                                            </label>
+                                                        </div>
+                                                        {% else %}
+                                                        <button type="button" class="btn btn-outline-danger btn-sm remove-materia-btn" {% if forloop.first %}style="display:none"{% endif %}>
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <template id="materia-empty-form-template">
+                                <tr class="materia-row">
+                                    {% for field in materias_formset.empty_form.visible_fields %}
+                                        {% if forloop.first %}
+                                        <td>
+                                            {% render_field field class="form-select" %}
+                                        </td>
+                                        {% endif %}
+                                        {% if forloop.counter == 2 %}
+                                        <td>
+                                            <div class="input-group">
+                                                {% render_field field class="form-control" min="1" %}
+                                                <span class="input-group-text">un</span>
+                                            </div>
+                                        </td>
+                                        {% endif %}
+                                        {% if forloop.counter == 3 %}
+                                        <td>
+                                            {% render_field field class="form-control" rows="2" style="resize: vertical" %}
+                                        </td>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-outline-danger btn-sm remove-materia-btn">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                        {% if materias_formset.can_delete %}{% render_field materias_formset.empty_form.DELETE %}{% endif %}
+                                    </td>
+                                </tr>
+                            </template>
+                            <button type="button" class="btn btn-success btn-sm mt-2" id="add-materia-btn">
+                                <i class="bi bi-plus-circle"></i> Adicionar Matéria-Prima
+                            </button>
+                        </div>
+
                         <div class="d-flex justify-content-end mt-4">
                             <a href="{% url 'producao:produto_list' %}" class="btn btn-outline-secondary me-2">
                                 <i class="bi bi-x-circle"></i> Cancelar
@@ -134,4 +237,73 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Inicializando o formulário de produto...');
+    
+    // Adicionar novo item de matéria-prima
+    const btnAdicionarMateria = document.getElementById('add-materia-btn');
+    if (btnAdicionarMateria) {
+        btnAdicionarMateria.addEventListener('click', function() {
+            // Obter o formset management form
+            const totalFormsInput = document.querySelector('input[name="produtomateriaprima_set-TOTAL_FORMS"]');
+            if (!totalFormsInput) {
+                console.error('Erro: Não foi possível encontrar o formulário de gerenciamento de matérias-primas.');
+                return;
+            }
+            
+            const totalForms = parseInt(totalFormsInput.value);
+            const newFormIdx = totalForms;
+            
+            // Obter o template
+            const template = document.getElementById('materia-empty-form-template');
+            if (!template) {
+                console.error('Erro: Template para nova matéria-prima não encontrado.');
+                return;
+            }
+            
+            // Criar nova linha
+            const newRow = document.createElement('tr');
+            newRow.className = 'materia-row';
+            newRow.innerHTML = template.innerHTML.replace(/__prefix__/g, newFormIdx);
+            
+            // Adicionar à tabela
+            document.querySelector('#materias-tbody').appendChild(newRow);
+            
+            // Atualizar o contador de formulários
+            totalFormsInput.value = newFormIdx + 1;
+            
+            // Adicionar event listener para o botão de remover
+            const removeBtn = newRow.querySelector('.remove-materia-btn');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function() {
+                    const row = this.closest('tr');
+                    const delInput = row.querySelector('input[name$="-DELETE"]');
+                    if (delInput) {
+                        delInput.checked = true;
+                        row.style.display = 'none';
+                    } else {
+                        row.remove();
+                    }
+                });
+            }
+        });
+    }
+    
+    // Remover matéria-prima
+    document.querySelectorAll('.remove-materia-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const row = this.closest('tr');
+            const delInput = row.querySelector('input[name$="-DELETE"]');
+            if (delInput) {
+                delInput.checked = true;
+                row.style.display = 'none';
+            } else {
+                row.remove();
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

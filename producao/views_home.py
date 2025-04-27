@@ -1,8 +1,10 @@
 from django.views.generic import TemplateView
 from datetime import datetime, timedelta
+from django.db.models import Sum
+from django.utils import timezone
 from producao.models import OrdemProducao
 from estoque.models import SaldoEstoque
-from comercial.models import Venda
+from comercial.models import Venda, Cliente, Fornecedor
 from financeiro.models import ContaPagar, ContaReceber
 
 class HomeView(TemplateView):
@@ -11,19 +13,32 @@ class HomeView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         # Produção
-        context['ordens_andamento'] = OrdemProducao.objects.filter(status='EM_ANDAMENTO')
+        context['ordens_andamento'] = OrdemProducao.objects.filter(status='EM_PRODUCAO')
+        
+        # Ordens finalizadas no mês atual (usando data_fim que é preenchida automaticamente)
+        hoje = timezone.now().date()
+        ordens_finalizadas = OrdemProducao.objects.filter(
+            status='FINALIZADA',
+            data_fim__month=hoje.month,
+            data_fim__year=hoje.year
+        )
+        context['ordens_finalizadas_mes'] = ordens_finalizadas.count()
+        
         # Gráfico produção mensal
         meses = []
         quantidades = []
-        today = datetime.now()
+        today = datetime.now().date()  # Usando date() para compatibilidade com DateField
         for i in range(6):
             month = today - timedelta(days=30*i)
             meses.insert(0, month.strftime('%b/%Y'))
-            quantidades.insert(0, OrdemProducao.objects.filter(
+            # Conta ordens finalizadas no mês, garantindo que data_fim existe
+            qs = OrdemProducao.objects.filter(
+                status='FINALIZADA',
+                data_fim__isnull=False,
                 data_fim__month=month.month,
-                data_fim__year=month.year,
-                status='FINALIZADA'
-            ).count())
+                data_fim__year=month.year
+            )
+            quantidades.insert(0, qs.count())
         context['meses'] = meses
         context['quantidades'] = quantidades
         # Estoque
@@ -42,8 +57,28 @@ class HomeView(TemplateView):
         context['vendas_nao_finalizadas'] = Venda.objects.exclude(status__in=['FECHADA', 'CANCELADA'])
 
         # Alertas financeiro - contas vencidas
-        from django.utils import timezone
         hoje = timezone.now().date()
         context['contas_pagar_vencidas'] = ContaPagar.objects.filter(status='PENDENTE', data_vencimento__lt=hoje)
         context['contas_receber_vencidas'] = ContaReceber.objects.filter(status='PENDENTE', data_vencimento__lt=hoje)
+
+        # Dados financeiros
+        hoje = timezone.now().date()
+        mes_atual = hoje.month
+        ano_atual = hoje.year
+        
+        # Receita mensal (vendas finalizadas no mês)
+        receita_mensal = Venda.objects.filter(
+            status='FECHADA',
+            data_venda__month=mes_atual,
+            data_venda__year=ano_atual
+        ).aggregate(total=Sum('valor_total'))['total'] or 0
+        context['receita_mensal'] = f"{receita_mensal:,.2f}"
+
+        # Contagem de vendas finalizadas
+        context['vendas_finalizadas_count'] = Venda.objects.filter(status='FECHADA').count()
+
+        # Contagem de clientes e fornecedores
+        context['clientes_count'] = Cliente.objects.count()
+        context['fornecedores_count'] = Fornecedor.objects.count()
+
         return context

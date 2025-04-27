@@ -1,5 +1,5 @@
 from django import forms
-from .models import OrdemProducao, Produto, MateriaPrima
+from .models import OrdemProducao, Produto, MateriaPrima, ProdutoMateriaPrima
 
 class OrdemProducaoForm(forms.ModelForm):
     class Meta:
@@ -16,3 +16,17 @@ class MateriaPrimaForm(forms.ModelForm):
     class Meta:
         model = MateriaPrima
         fields = ['nome', 'descricao', 'tipo', 'unidade_medida', 'custo_unitario', 'estoque_minimo']
+
+class ProdutoMateriaPrimaForm(forms.ModelForm):
+    class Meta:
+        model = ProdutoMateriaPrima
+        fields = ['materia_prima', 'quantidade_utilizada', 'observacoes']
+
+from django.forms import inlineformset_factory
+ProdutoMateriaPrimaFormSet = inlineformset_factory(
+    Produto,
+    ProdutoMateriaPrima,
+    form=ProdutoMateriaPrimaForm,
+    extra=1,
+    can_delete=True
+)
