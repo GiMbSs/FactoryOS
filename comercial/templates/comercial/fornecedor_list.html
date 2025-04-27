@@ -1,45 +1,329 @@
 {% extends "base.html" %}
-{% block title %}Lista de Fornecedores{% endblock %}
+
+{% block title %}Fornecedores - Coffee Filter Factory{% endblock %}
+
+{% block breadcrumbs %}
+<nav aria-label="breadcrumb">
+  <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
+    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-house"></i> Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'comercial:dashboard' %}" class="text-decoration-none"><i class="bi bi-shop"></i> Comercial</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-building"></i> Fornecedores</li>
+  </ol>
+</nav>
+{% endblock %}
+
 {% block content %}
-<div class="container">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
-          <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
-          <li class="breadcrumb-item active" aria-current="page">Fornecedores</li>
-        </ol>
-      </nav>
+<div class="container-fluid">
+    <!-- Cabeçalho e botões de ação -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">Lista de Fornecedores</h2>
-        <a href="{% url 'comercial:cadastro_fornecedor' %}" class="btn btn-success">
-            <i class="bi bi-person-plus"></i> Novo Fornecedor
-        </a>
+        <div>
+            <h2 class="fw-bold mb-0">Fornecedores</h2>
+            <p class="text-muted">Gerenciamento de fornecedores da empresa</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'comercial:lista_clientes' %}" class="btn btn-outline-primary">
+                <i class="bi bi-people"></i> Clientes
+            </a>
+            <a href="{% url 'comercial:cadastro_fornecedor' %}" class="btn btn-success">
+                <i class="bi bi-building-add"></i> Novo Fornecedor
+            </a>
+        </div>
     </div>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Nome</th>
-                <th>CNPJ</th>
-                <th>Email</th>
-                <th>Telefone</th>
-<th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for fornecedor in fornecedores %}
-            <tr>
-                <td>{{ fornecedor.nome }}</td>
-                <td>{{ fornecedor.cnpj }}</td>
-                <td>{{ fornecedor.email }}</td>
-                <td>{{ fornecedor.telefone }}</td>
-<td>
-    <a href="{% url 'comercial:editar_fornecedor' fornecedor.pk %}" class="btn btn-sm btn-warning ms-1">Editar</a>
-    <a href="{% url 'comercial:excluir_fornecedor' fornecedor.pk %}" class="btn btn-sm btn-danger ms-1">Excluir</a>
-</td>
-            </tr>
-        {% empty %}
-            <tr><td colspan="4">Nenhum fornecedor cadastrado.</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
+
+    <!-- Cards de resumo -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total de Fornecedores</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ fornecedores|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-building fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Matérias-Primas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ materias_primas_count|default:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-box-seam fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Compras no Mês</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ compras_mes|default:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-cart fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Novos Fornecedores (Mês)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ novos_fornecedores_mes|default:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-building-add fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros e Tabela -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Lista de Fornecedores</h6>
+            <div class="input-group" style="max-width: 300px;">
+                <input type="text" id="filtroFornecedores" class="form-control" placeholder="Buscar fornecedor...">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped" id="tabelaFornecedores">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>CNPJ</th>
+                            <th>Email</th>
+                            <th>Telefone</th>
+                            <th>Materiais Fornecidos</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fornecedor in fornecedores %}
+                        <tr class="align-middle">
+                            <td class="fw-bold">{{ fornecedor.nome }}</td>
+                            <td>{{ fornecedor.cnpj|default:"-" }}</td>
+                            <td>
+                                {% if fornecedor.email %}
+                                <a href="mailto:{{ fornecedor.email }}" class="text-decoration-none">
+                                    <i class="bi bi-envelope"></i> {{ fornecedor.email }}
+                                </a>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if fornecedor.telefone %}
+                                <a href="tel:{{ fornecedor.telefone }}" class="text-decoration-none">
+                                    <i class="bi bi-telephone"></i> {{ fornecedor.telefone }}
+                                </a>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% with materiais_count=fornecedor.materias_primas.count %}
+                                    {% if materiais_count > 0 %}
+                                        <span class="badge bg-info">{{ materiais_count }} itens</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Nenhum</span>
+                                    {% endif %}
+                                {% endwith %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'comercial:editar_fornecedor' fornecedor.pk %}" class="btn btn-sm btn-primary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#detalhesModal{{ fornecedor.pk }}" title="Detalhes">
+                                        <i class="bi bi-info-circle"></i>
+                                    </button>
+                                    <a href="{% url 'comercial:excluir_fornecedor' fornecedor.pk %}" class="btn btn-sm btn-danger" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="alert alert-info mb-0">
+                                    <i class="bi bi-info-circle"></i> Nenhum fornecedor cadastrado.
+                                    <a href="{% url 'comercial:cadastro_fornecedor' %}" class="alert-link">Cadastrar novo fornecedor</a>.
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação (para implementação futura) -->
+            {% if fornecedores.has_other_pages %}
+            <nav aria-label="Paginação de fornecedores" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if fornecedores.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ fornecedores.previous_page_number }}" aria-label="Anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for i in fornecedores.paginator.page_range %}
+                        {% if fornecedores.number == i %}
+                            <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                        {% else %}
+                            <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if fornecedores.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ fornecedores.next_page_number }}" aria-label="Próximo">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Próximo">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
 </div>
+
+<!-- Modais de detalhes para cada fornecedor -->
+{% for fornecedor in fornecedores %}
+<div class="modal fade" id="detalhesModal{{ fornecedor.pk }}" tabindex="-1" aria-labelledby="detalhesModalLabel{{ fornecedor.pk }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detalhesModalLabel{{ fornecedor.pk }}">Detalhes do Fornecedor: {{ fornecedor.nome }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Informações Gerais</h6>
+                        <p><strong>Nome:</strong> {{ fornecedor.nome }}</p>
+                        <p><strong>CNPJ:</strong> {{ fornecedor.cnpj|default:"Não informado" }}</p>
+                        <p><strong>Email:</strong> {{ fornecedor.email|default:"Não informado" }}</p>
+                        <p><strong>Telefone:</strong> {{ fornecedor.telefone|default:"Não informado" }}</p>
+                        <p><strong>Contato:</strong> {{ fornecedor.contato|default:"Não informado" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold">Endereço</h6>
+                        <p><strong>Logradouro:</strong> {{ fornecedor.endereco|default:"Não informado" }}</p>
+                        <p><strong>Cidade:</strong> {{ fornecedor.cidade|default:"Não informada" }}</p>
+                        <p><strong>Estado:</strong> {{ fornecedor.estado|default:"Não informado" }}</p>
+                        <p><strong>CEP:</strong> {{ fornecedor.cep|default:"Não informado" }}</p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-12">
+                        <h6 class="fw-bold">Matérias-Primas Fornecidas</h6>
+                        {% if fornecedor.materias_primas.all %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Nome</th>
+                                        <th>Tipo</th>
+                                        <th>Custo Unitário</th>
+                                        <th>Estoque Atual</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for materia in fornecedor.materias_primas.all %}
+                                    <tr>
+                                        <td>{{ materia.nome }}</td>
+                                        <td>{{ materia.get_tipo_display }}</td>
+                                        <td>R$ {{ materia.custo_unitario }}</td>
+                                        <td>
+                                            {% if materia.saldoestoque %}
+                                                {{ materia.saldoestoque.quantidade_atual }} {{ materia.get_unidade_medida_display }}
+                                            {% else %}
+                                                0 {{ materia.get_unidade_medida_display }}
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <p class="text-muted">Este fornecedor ainda não possui matérias-primas associadas.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <a href="{% url 'comercial:editar_fornecedor' fornecedor.pk %}" class="btn btn-primary">Editar Fornecedor</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Script para filtro de tabela -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputFiltro = document.getElementById('filtroFornecedores');
+        if (inputFiltro) {
+            inputFiltro.addEventListener('keyup', function() {
+                const termo = this.value.toLowerCase();
+                const tabela = document.getElementById('tabelaFornecedores');
+                const linhas = tabela.querySelectorAll('tbody tr');
+                
+                linhas.forEach(linha => {
+                    const texto = linha.textContent.toLowerCase();
+                    if (texto.indexOf(termo) > -1) {
+                        linha.style.display = '';
+                    } else {
+                        linha.style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
+</script>
 {% endblock %}

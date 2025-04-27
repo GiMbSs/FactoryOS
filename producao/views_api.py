@@ -14,9 +14,14 @@ class ProdutoMateriasPrimasAPIView(View):
         materias_primas = ProdutoMateriaPrima.objects.filter(produto_id=produto_id)
         data = []
         for mp in materias_primas:
+            quantidade_total = float(mp.quantidade_utilizada) * quantidade
+            estoque_disponivel = getattr(mp.materia_prima, 'estoque_atual', 0)  # ajuste se necessário
+            suficiente = estoque_disponivel >= quantidade_total
             data.append({
                 'materia_prima': mp.materia_prima.nome,
-                'quantidade_total': float(mp.quantidade_utilizada) * quantidade,
-                'unidade': mp.materia_prima.unidade_medida
+                'quantidade_total': quantidade_total,
+                'unidade': mp.materia_prima.unidade_medida,
+                'estoque_disponivel': estoque_disponivel,
+                'suficiente': suficiente,
             })
         return JsonResponse(data, safe=False)

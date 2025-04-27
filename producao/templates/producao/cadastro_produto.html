@@ -1,50 +1,135 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
-{% block title %}Cadastro de Produto{% endblock %}
+
+{% block title %}{% if form.instance.pk %}Editar Produto{% else %}Novo Produto{% endif %}{% endblock %}
+
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
-    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
-    <li class="breadcrumb-item">Produção</li>
-    <li class="breadcrumb-item active" aria-current="page">Cadastro</li>
+    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-house"></i> Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'producao:dashboard' %}" class="text-decoration-none"><i class="bi bi-gear"></i> Produção</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'producao:produto_list' %}" class="text-decoration-none"><i class="bi bi-box-seam"></i> Produtos</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-plus-circle"></i> {% if form.instance.pk %}Editar Produto{% else %}Novo Produto{% endif %}</li>
   </ol>
 </nav>
 {% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-7 col-md-9">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h2 class="mb-4 fw-bold text-primary">Cadastro de Produto</h2>
-                {% if messages %}
-    {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="container-fluid">
+    <!-- Cabeçalho e botões de ação -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">{% if form.instance.pk %}Editar Produto: {{ form.instance.nome }}{% else %}Novo Produto{% endif %}</h2>
+            <p class="text-muted">{% if form.instance.pk %}Atualizar informações do produto{% else %}Registrar novo produto no sistema{% endif %}</p>
         </div>
-    {% endfor %}
-{% endif %}
-<form method="post" autocomplete="off">
-                    {% csrf_token %}
+        <div>
+            <a href="{% url 'producao:produto_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar para Lista
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="row mb-4">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="bi bi-info-circle me-2"></i> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-box-seam"></i> Informações do Produto</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" autocomplete="off" id="produtoForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="id_nome" class="form-label fw-bold">Nome <span class="text-danger">*</span></label>
+                                {% render_field form.nome class="form-control" placeholder="Nome do produto" %}
+                                {% if form.nome.errors %}
+                                <div class="invalid-feedback d-block">{{ form.nome.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="id_codigo_sku" class="form-label fw-bold">Código SKU <span class="text-danger">*</span></label>
+                                {% render_field form.codigo_sku class="form-control" placeholder="SKU-0000" %}
+                                {% if form.codigo_sku.errors %}
+                                <div class="invalid-feedback d-block">{{ form.codigo_sku.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_descricao" class="form-label fw-bold">Descrição</label>
+                            {% render_field form.descricao class="form-control" placeholder="Descrição detalhada do produto" rows="3" %}
+                            {% if form.descricao.errors %}
+                            <div class="invalid-feedback d-block">{{ form.descricao.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="id_tipo" class="form-label fw-bold">Tipo <span class="text-danger">*</span></label>
+                            {% render_field form.tipo class="form-select" %}
+                            {% if form.tipo.errors %}
+                            <div class="invalid-feedback d-block">{{ form.tipo.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'producao:produto_list' %}" class="btn btn-outline-secondary me-2">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Salvar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 col-md-10">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-info-circle"></i> Informações Adicionais</h6>
+                </div>
+                <div class="card-body">
                     <div class="mb-3">
-                        <label for="nome" class="form-label">Nome</label>
-                        {% render_field form.nome class="form-control" %}
+                        <h6 class="fw-bold">Tipos de Produtos</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span><i class="bi bi-circle-fill text-primary me-2"></i> Produto Final</span>
+                                <span class="badge bg-primary rounded-pill">Pronto para venda</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span><i class="bi bi-circle-fill text-success me-2"></i> Produto Intermediário</span>
+                                <span class="badge bg-success rounded-pill">Componente</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span><i class="bi bi-circle-fill text-warning me-2"></i> Kit/Conjunto</span>
+                                <span class="badge bg-warning rounded-pill">Agrupamento</span>
+                            </li>
+                        </ul>
                     </div>
+                    
                     <div class="mb-3">
-                        <label for="descricao" class="form-label">Descrição</label>
-                        {% render_field form.descricao class="form-control" %}
+                        <h6 class="fw-bold">Código SKU</h6>
+                        <p class="small text-muted">O código SKU (Stock Keeping Unit) é um identificador único para cada produto no sistema. Recomenda-se seguir um padrão consistente para facilitar a identificação e rastreamento dos produtos.</p>
+                        <div class="alert alert-info py-2">
+                            <i class="bi bi-lightbulb me-2"></i> Exemplo: <strong>MOV-0001</strong> para móveis, <strong>ELE-0001</strong> para eletrônicos.
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label for="codigo_sku" class="form-label">SKU</label>
-                        {% render_field form.codigo_sku class="form-control" %}
-                    </div>
-                    <div class="mb-3">
-                        <label for="tipo" class="form-label">Tipo</label>
-                        {% render_field form.tipo class="form-select" %}
-                    </div>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                    <a href="{% url 'producao:produto_list' %}" class="btn btn-secondary">Cancelar</a>
-                </form>
+                </div>
             </div>
         </div>
     </div>

@@ -1,53 +1,318 @@
 {% extends "base.html" %}
-{% block title %}Lista de Pedidos{% endblock %}
+
+{% block title %}Pedidos - Coffee Filter Factory{% endblock %}
+
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
-    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Pedidos</li>
+    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-house"></i> Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'comercial:dashboard' %}" class="text-decoration-none"><i class="bi bi-shop"></i> Comercial</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-cart"></i> Pedidos</li>
   </ol>
 </nav>
 {% endblock %}
+
 {% block content %}
 <div class="container-fluid">
+    <!-- Cabeçalho e botões de ação -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">Pedidos</h2>
-        <a href="{% url 'comercial:pedido_create' %}" class="btn btn-success">
-            <i class="bi bi-plus-lg"></i> Novo Pedido
-        </a>
+        <div>
+            <h2 class="fw-bold mb-0">Pedidos</h2>
+            <p class="text-muted">Gerenciamento de pedidos e vendas</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'comercial:lista_clientes' %}" class="btn btn-outline-primary">
+                <i class="bi bi-people"></i> Clientes
+            </a>
+            <a href="{% url 'comercial:pedido_create' %}" class="btn btn-success">
+                <i class="bi bi-cart-plus"></i> Novo Pedido
+            </a>
+        </div>
     </div>
-    <table class="table table-striped table-hover">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Cliente</th>
-                <th>Vendedor</th>
-                <th>Data</th>
-                <th>Valor Total</th>
-                <th>Status</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for pedido in pedidos %}
-            <tr>
-                <td>{{ pedido.id }}</td>
-                <td>{{ pedido.cliente }}</td>
-                <td>{{ pedido.vendedor }}</td>
-                <td>{{ pedido.data_venda|date:"d/m/Y H:i" }}</td>
-                <td>R$ {{ pedido.valor_total }}</td>
-                <td>{{ pedido.get_status_display }}</td>
-                <td>
-                    <a href="{% url 'comercial:pedido_edit' pedido.pk %}" class="btn btn-sm btn-primary">Editar</a>
-<a href="{% url 'comercial:pedido_delete' pedido.pk %}" class="btn btn-sm btn-danger ms-2">Excluir</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="7">Nenhum pedido cadastrado</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+    <!-- Cards de resumo -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total de Pedidos</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pedidos|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-cart-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Faturamento Total</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">R$ {{ faturamento_total|default:'0,00' }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-currency-dollar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Pedidos Pendentes</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pedidos_pendentes|default:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-hourglass-split fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pedidos do Mês</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ pedidos_mes|default:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-calendar-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros e Tabela -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Lista de Pedidos</h6>
+            <div class="d-flex gap-2">
+                <div class="input-group" style="width: 250px;">
+                    <select id="filtroStatus" class="form-select form-select-sm">
+                        <option value="">Todos os Status</option>
+                        <option value="ABERTA">Aberta</option>
+                        <option value="FECHADA">Fechada</option>
+                    </select>
+                </div>
+                <div class="input-group" style="width: 250px;">
+                    <input type="text" id="filtroPedidos" class="form-control form-control-sm" placeholder="Buscar pedido...">
+                    <button class="btn btn-outline-secondary btn-sm" type="button">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped" id="tabelaPedidos">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Cliente</th>
+                            <th>Vendedor</th>
+                            <th>Data</th>
+                            <th>Valor Total</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for pedido in pedidos %}
+                        <tr class="align-middle">
+                            <td><span class="fw-bold">#{{ pedido.id }}</span></td>
+                            <td>
+                                <a href="{% url 'comercial:editar_cliente' pedido.cliente.pk %}" class="text-decoration-none">
+                                    {{ pedido.cliente }}
+                                </a>
+                            </td>
+                            <td>{{ pedido.vendedor|default:"-" }}</td>
+                            <td>{{ pedido.data_venda|date:"d/m/Y H:i" }}</td>
+                            <td class="fw-bold text-success">R$ {{ pedido.valor_total }}</td>
+                            <td>
+                                {% if pedido.status == 'ABERTA' %}
+                                    <span class="badge bg-warning text-dark">{{ pedido.get_status_display }}</span>
+                                {% elif pedido.status == 'FECHADA' %}
+                                    <span class="badge bg-success">{{ pedido.get_status_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ pedido.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'comercial:pedido_edit' pedido.pk %}" class="btn btn-sm btn-primary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#statusModal{{ pedido.pk }}" title="Alterar Status">
+                                        <i class="bi bi-arrow-repeat"></i>
+                                    </button>
+                                    <a href="{% url 'comercial:pedido_delete' pedido.pk %}" class="btn btn-sm btn-danger" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <div class="alert alert-info mb-0">
+                                    <i class="bi bi-info-circle"></i> Nenhum pedido cadastrado.
+                                    <a href="{% url 'comercial:pedido_create' %}" class="alert-link">Criar novo pedido</a>.
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação (para implementação futura) -->
+            {% if pedidos.has_other_pages %}
+            <nav aria-label="Paginação de pedidos" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if pedidos.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ pedidos.previous_page_number }}" aria-label="Anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for i in pedidos.paginator.page_range %}
+                        {% if pedidos.number == i %}
+                            <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                        {% else %}
+                            <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pedidos.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ pedidos.next_page_number }}" aria-label="Próximo">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Próximo">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
 </div>
+
+<!-- Modais para alterar status de cada pedido -->
+{% for pedido in pedidos %}
+<div class="modal fade" id="statusModal{{ pedido.pk }}" tabindex="-1" aria-labelledby="statusModalLabel{{ pedido.pk }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statusModalLabel{{ pedido.pk }}">Alterar Status do Pedido #{{ pedido.id }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form method="post" action="{% url 'comercial:pedido_update_status' pedido.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="status{{ pedido.pk }}" class="form-label">Status do Pedido</label>
+                        <select class="form-select" id="status{{ pedido.pk }}" name="status" onchange="toggleVencimento('{{ pedido.pk }}')">
+                            <option value="ABERTA" {% if pedido.status == 'ABERTA' %}selected{% endif %}>Aberta</option>
+                            <option value="FECHADA" {% if pedido.status == 'FECHADA' %}selected{% endif %}>Fechada</option>
+                        </select>
+                        <small class="text-muted">Ao fechar o pedido, uma conta a receber será criada automaticamente.</small>
+                    </div>
+                    <div class="mb-3 data-vencimento-{{ pedido.pk }}" {% if pedido.status == 'FECHADA' %}style="display: block;"{% else %}style="display: none;"{% endif %}>
+                        <label for="data_vencimento{{ pedido.pk }}" class="form-label">Data de Vencimento</label>
+                        <input type="date" class="form-control" id="data_vencimento{{ pedido.pk }}" name="data_vencimento">
+                        <small class="text-muted">Data de vencimento para a conta a receber. Se não informada, será considerado 30 dias após hoje.</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="observacao{{ pedido.pk }}" class="form-label">Observação (opcional)</label>
+                        <textarea class="form-control" id="observacao{{ pedido.pk }}" name="observacao" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Alteração</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Script para filtro de tabela e controle de campos -->
+<script>
+    // Função para mostrar/ocultar campo de data de vencimento
+    function toggleVencimento(pedidoId) {
+        const statusSelect = document.getElementById('status' + pedidoId);
+        const dataVencimentoDiv = document.querySelector('.data-vencimento-' + pedidoId);
+        
+        if (statusSelect.value === 'FECHADA') {
+            dataVencimentoDiv.style.display = 'block';
+        } else {
+            dataVencimentoDiv.style.display = 'none';
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputFiltro = document.getElementById('filtroPedidos');
+        const selectStatus = document.getElementById('filtroStatus');
+        const tabela = document.getElementById('tabelaPedidos');
+        
+        function filtrarTabela() {
+            const termo = inputFiltro.value.toLowerCase();
+            const status = selectStatus.value;
+            const linhas = tabela.querySelectorAll('tbody tr');
+            
+            linhas.forEach(linha => {
+                const texto = linha.textContent.toLowerCase();
+                const statusCelula = linha.querySelector('td:nth-child(6)');
+                const statusValor = statusCelula ? statusCelula.textContent.trim().toLowerCase() : '';
+                
+                const matchTermo = texto.indexOf(termo) > -1;
+                const matchStatus = status === '' || statusValor.includes(status.toLowerCase());
+                
+                if (matchTermo && matchStatus) {
+                    linha.style.display = '';
+                } else {
+                    linha.style.display = 'none';
+                }
+            });
+        }
+        
+        if (inputFiltro) {
+            inputFiltro.addEventListener('keyup', filtrarTabela);
+        }
+        
+        if (selectStatus) {
+            selectStatus.addEventListener('change', filtrarTabela);
+        }
+    });
+</script>
 {% endblock %}

@@ -1,80 +1,658 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
-{% block title %}Cadastro de Pedido{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar Pedido #{{ form.instance.pk }}{% else %}Novo Pedido{% endif %}{% endblock %}
+
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
-    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
-    <li class="breadcrumb-item"><a href="{% url 'comercial:pedido_list' %}">Pedidos</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Cadastro</li>
+    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-house"></i> Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'comercial:dashboard' %}" class="text-decoration-none"><i class="bi bi-shop"></i> Comercial</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'comercial:pedido_list' %}" class="text-decoration-none"><i class="bi bi-cart"></i> Pedidos</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-{% if form.instance.pk %}pencil-square{% else %}plus-circle{% endif %}"></i> {% if form.instance.pk %}Editar Pedido #{{ form.instance.pk }}{% else %}Novo Pedido{% endif %}</li>
   </ol>
 </nav>
 {% endblock %}
-{% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-8 col-md-10">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h2 class="mb-4 fw-bold text-primary">Cadastro de Pedido</h2>
-                {% if messages %}
-                    {% for message in messages %}
-                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                            {{ message }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                        </div>
-                    {% endfor %}
-                {% endif %}
-                <form method="post" autocomplete="off">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label for="cliente" class="form-label">Cliente</label>
-                        {% render_field form.cliente class="form-select" %}
-                    </div>
-                    <div class="mb-3">
-                        <label for="vendedor" class="form-label">Vendedor</label>
-                        {% render_field form.vendedor class="form-select" %}
-                    </div>
-                    <div class="mb-3">
-                        <label for="valor_total" class="form-label">Valor Total</label>
-                        {% render_field form.valor_total class="form-control" %}
-                    </div>
-                    <div class="mb-3">
-                        <label for="status" class="form-label">Status</label>
-                        {% render_field form.status class="form-select" %}
-                    </div>
-                    <div class="mb-3">
-                        <label for="observacoes" class="form-label">Observações</label>
-                        {% render_field form.observacoes class="form-control" %}
-                    </div>
 
-                    <h5 class="mt-4">Itens do Pedido</h5>
-                    <table class="table table-bordered align-middle">
-                        <thead>
-                            <tr>
-                                <th>Produto</th>
-                                <th>Quantidade</th>
-                                <th>Preço Unitário</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {{ itens_formset.management_form }}
-                            {% for form in itens_formset %}
-                            <tr>
-                                {{ form.id }}
-                                <td>{% render_field form.produto class="form-select" %}</td>
-                                <td>{% render_field form.quantidade class="form-control" %}</td>
-                                <td>{% render_field form.preco_unitario class="form-control" %}</td>
-                                <td>{% if form.instance.pk %}{% render_field form.DELETE %} Remover{% endif %}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                    <a href="{% url 'comercial:pedido_list' %}" class="btn btn-secondary">Cancelar</a>
-                </form>
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabeçalho e botões de ação -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">{% if form.instance.pk %}Editar Pedido #{{ form.instance.pk }}{% else %}Novo Pedido{% endif %}</h2>
+            <p class="text-muted">{% if form.instance.pk %}Atualizar informações do pedido{% else %}Cadastrar novo pedido no sistema{% endif %}</p>
+        </div>
+        <div>
+            <a href="{% url 'comercial:pedido_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar para Lista
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="row mb-4">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {% if 'error' in message.tags %}
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                {% elif 'success' in message.tags %}
+                <i class="bi bi-check-circle-fill me-2"></i>
+                {% else %}
+                <i class="bi bi-info-circle me-2"></i>
+                {% endif %}
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-info-circle"></i> Informações do Pedido</h6>
+                    {% if form.instance.pk %}
+                    <span class="badge {% if form.instance.status == 'ABERTA' %}bg-warning text-dark{% elif form.instance.status == 'FECHADA' %}bg-success{% else %}bg-secondary{% endif %} px-3 py-2">
+                        <i class="bi bi-tag-fill me-1"></i> {{ form.instance.get_status_display }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    <form method="post" autocomplete="off" id="pedidoForm" onsubmit="return validarFormulario();">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="cliente" class="form-label fw-bold">Cliente <span class="text-danger">*</span></label>
+                                {% render_field form.cliente class="form-select" placeholder="Selecione o cliente" %}
+                                {% if form.cliente.errors %}
+                                <div class="invalid-feedback d-block">{{ form.cliente.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="vendedor" class="form-label fw-bold">Vendedor <span class="text-danger">*</span></label>
+                                {% render_field form.vendedor class="form-select" %}
+                                {% if form.vendedor.errors %}
+                                <div class="invalid-feedback d-block">{{ form.vendedor.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="status" class="form-label fw-bold">Status <span class="text-danger">*</span></label>
+                                {% render_field form.status class="form-select" %}
+                                {% if form.status.errors %}
+                                <div class="invalid-feedback d-block">{{ form.status.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Campo valor_total oculto, será preenchido automaticamente pelo JavaScript -->
+                        <input type="hidden" name="{{ form.valor_total.html_name }}" id="id_valor_total" value="{{ form.valor_total.value|default:'0.00' }}" />
+                        
+                        <!-- Área para exibir mensagens de erro do formulário -->
+                        <div id="mensagens-erro" class="mb-4"></div>
+
+                        <div class="mb-3">
+                            <label for="observacoes" class="form-label fw-bold">Observações</label>
+                            {% render_field form.observacoes class="form-control" rows="3" placeholder="Informações adicionais sobre o pedido..." %}
+                            {% if form.observacoes.errors %}
+                            <div class="invalid-feedback d-block">{{ form.observacoes.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                                        <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-list-check"></i> Itens do Pedido</h6>
+                                        <button type="button" id="btnCalcularTotal" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-calculator"></i> Recalcular Total
+                                        </button>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table table-hover table-striped mb-0" id="tabela-itens">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Produto</th>
+                                                        <th width="120">Quantidade</th>
+                                                        <th width="180">Preço Unitário (R$)</th>
+                                                        <th width="120">Subtotal (R$)</th>
+                                                        <th width="80">Ações</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {{ itens_formset.management_form }}
+                                                    {% for form in itens_formset %}
+                                                    <tr class="item-row{% if form.instance.pk and form.DELETE.value %} table-danger text-decoration-line-through{% endif %}">
+                                                        {{ form.id }}
+                                                        <td>
+                                                            {% render_field form.produto class="form-select produto-select" %}
+                                                            {% if form.produto.errors %}
+                                                            <div class="invalid-feedback d-block">{{ form.produto.errors }}</div>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            <div class="input-group">
+                                                                {% render_field form.quantidade class="form-control item-quantidade" min="1" %}
+                                                                <span class="input-group-text">un</span>
+                                                            </div>
+                                                            {% if form.quantidade.errors %}
+                                                            <div class="invalid-feedback d-block">{{ form.quantidade.errors }}</div>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            <div class="input-group">
+                                                                <span class="input-group-text">R$</span>
+                                                                <!-- Campo para exibição com formato brasileiro -->
+                                                                <input type="text" class="form-control item-preco-display" placeholder="0,00" data-original-value="{{ form.preco_unitario.value|default:'0.00' }}">
+                                                                <!-- Campo oculto para envio com formato americano -->
+                                                                <input type="hidden" name="{{ form.preco_unitario.html_name }}" id="{{ form.preco_unitario.auto_id }}" class="item-preco" value="{{ form.preco_unitario.value|default:'0.00' }}">
+                                                            </div>
+                                                            {% if form.preco_unitario.errors %}
+                                                            <div class="invalid-feedback d-block">{{ form.preco_unitario.errors }}</div>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>
+                                                            <div class="input-group">
+                                                                <span class="input-group-text">R$</span>
+                                                                <input type="text" class="form-control item-subtotal" readonly>
+                                                            </div>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            {% if form.instance.pk %}
+                                                            <div class="form-check">
+                                                                {% render_field form.DELETE class="form-check-input item-delete" id=form.DELETE.id_for_label %}
+                                                                <label class="form-check-label" for="{{ form.DELETE.id_for_label }}">
+                                                                    <i class="bi bi-trash text-danger"></i>
+                                                                </label>
+                                                            </div>
+                                                            {% else %}
+                                                            <button type="button" class="btn btn-sm btn-outline-danger btn-remover-item" {% if forloop.first %}style="display:none"{% endif %}>
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                                <tfoot class="table-light">
+                                                    <tr>
+                                                        <td colspan="5" class="text-center">
+                                                            <button type="button" id="btn-adicionar-item" class="btn btn-sm btn-success">
+                                                                <i class="bi bi-plus-circle"></i> Adicionar Item
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-white py-3">
+                                        <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-receipt"></i> Resumo do Pedido</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="text-muted">Total de Itens:</span>
+                                            <span class="fw-bold" id="total-itens">0</span>
+                                        </div>
+                                        <hr>
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <span class="text-muted">Subtotal:</span>
+                                            <span class="fw-bold" id="subtotal-pedido">R$ 0,00</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded">
+                                            <span class="fw-bold">TOTAL:</span>
+                                            <span class="fw-bold fs-5 text-primary" id="total-pedido">R$ 0,00</span>
+                                        </div>
+                                        
+                                        <div class="alert alert-info mt-3">
+                                            <i class="bi bi-info-circle"></i> O valor total é calculado automaticamente com base nos itens adicionados.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <div>
+                                <a href="{% url 'comercial:pedido_list' %}" class="btn btn-outline-secondary">
+                                    <i class="bi bi-x-circle"></i> Cancelar
+                                </a>
+                            </div>
+                            <div>
+                                {% if form.instance.pk %}
+                                <a href="{% url 'comercial:pedido_list' %}?id={{ form.instance.pk }}" class="btn btn-outline-info me-2">
+                                    <i class="bi bi-arrow-left-circle"></i> Voltar para Lista
+                                </a>
+                                {% endif %}
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-save"></i> {% if form.instance.pk %}Atualizar{% else %}Salvar{% endif %} Pedido
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('Inicializando o formulário de pedido...');
+        
+        // Inicializar os campos de preço de exibição com os valores originais
+        document.querySelectorAll('.item-preco-display').forEach(function(displayInput, index) {
+            // Obter o valor original do atributo data
+            const valorOriginal = displayInput.getAttribute('data-original-value');
+            console.log(`Item ${index+1} - Valor original:`, valorOriginal);
+            
+            if (valorOriginal && valorOriginal !== '0.00') {
+                // Converter para formato brasileiro (vírgula como separador decimal)
+                const valorBr = valorOriginal.replace('.', ',');
+                
+                // Formatar com separadores de milhar se necessário
+                const partes = valorBr.split(',');
+                if (partes[0].length > 3) {
+                    let parteInteira = partes[0];
+                    parteInteira = parteInteira.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    displayInput.value = parteInteira + ',' + partes[1];
+                } else {
+                    displayInput.value = valorBr;
+                }
+                
+                // Atualizar o campo oculto correspondente
+                const hiddenInput = displayInput.nextElementSibling;
+                if (hiddenInput && hiddenInput.classList.contains('item-preco')) {
+                    hiddenInput.value = valorOriginal;
+                    console.log(`Item ${index+1} - Campo oculto atualizado:`, hiddenInput.value);
+                }
+            }
+        });
+        
+        // Calcular total inicial (que também atualiza os subtotais)
+        console.log('Calculando totais iniciais...');
+        setTimeout(calcularTotal, 100); // Pequeno atraso para garantir que todos os campos foram inicializados
+        // Verificar se o formulário tem o campo valor_total
+        const valorTotalInput = document.getElementById('id_valor_total');
+        if (!valorTotalInput) {
+            console.error('ATENÇÃO: Campo valor_total não encontrado no formulário!');
+        }
+        // Função para formatar valores monetários
+        function formatarMoeda(valor) {
+            // Garantir que o valor seja tratado como número
+            const num = typeof valor === 'string' ? parseFloat(valor) : valor;
+            
+            // Formatar com 2 casas decimais fixas
+            const valorFormatado = num.toFixed(2).replace('.', ',');
+            
+            // Adicionar separadores de milhar
+            const partes = valorFormatado.split(',');
+            if (partes[0].length > 3) {
+                let parteInteira = partes[0];
+                parteInteira = parteInteira.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                return parteInteira + ',' + partes[1];
+            }
+            
+            return valorFormatado;
+        }
+        
+        // Função para converter string monetária em número
+        function converterParaNumero(valor) {
+            if (!valor) return 0;
+            // Remover todos os pontos (separadores de milhar) e substituir vírgula por ponto
+            const valorLimpo = valor.replace(/\./g, '').replace(',', '.');
+            console.log('Convertendo valor:', valor, '→', valorLimpo, '→', parseFloat(valorLimpo));
+            return parseFloat(valorLimpo) || 0;
+        }
+        
+        // Esta função não é mais usada diretamente, o cálculo foi movido para calcularTotal
+        // Mantida apenas para compatibilidade com chamadas existentes
+        function calcularSubtotalItem(row) {
+            const quantidade = parseInt(row.querySelector('.item-quantidade').value) || 0;
+            
+            // Obter o valor do campo oculto (formato americano)
+            const precoInput = row.querySelector('.item-preco');
+            
+            // Usar parseFloat para preservar os decimais exatos
+            const preco = precoInput ? parseFloat(precoInput.value) || 0 : 0;
+            
+            // Calcular o subtotal com precisão de 2 casas decimais
+            const subtotal = quantidade * preco;
+            
+            // Atualizar o campo de subtotal
+            const subtotalEl = row.querySelector('.item-subtotal');
+            if (subtotalEl) {
+                subtotalEl.value = formatarMoeda(subtotal);
+            }
+            
+            return subtotal; // Retornar o valor sem arredondar para evitar perda de precisão
+        }
+        
+        // Função para calcular o total do pedido
+        function calcularTotal() {
+            console.log('Executando cálculo de total...');
+            let total = 0;
+            let totalItens = 0;
+            
+            // Selecionar apenas as linhas visíveis e não marcadas para exclusão
+            const rows = document.querySelectorAll('tr.item-row:not(.table-danger)');
+            console.log('Número de itens encontrados:', rows.length);
+            
+            // Primeiro, garantir que todos os campos ocultos tenham os valores corretos
+            rows.forEach((row, index) => {
+                const displayInput = row.querySelector('.item-preco-display');
+                const hiddenInput = row.querySelector('.item-preco');
+                
+                if (displayInput && hiddenInput) {
+                    // Se o campo de exibição tem valor, converter para formato americano e atualizar o campo oculto
+                    if (displayInput.value) {
+                        const valorNum = converterParaNumero(displayInput.value);
+                        hiddenInput.value = valorNum.toFixed(2);
+                        console.log(`Item ${index+1} - Campo oculto sincronizado:`, hiddenInput.value);
+                    }
+                }
+            });
+            
+            // Agora calcular os subtotais e o total
+            rows.forEach((row, index) => {
+                const quantidade = parseInt(row.querySelector('.item-quantidade').value) || 0;
+                const precoInput = row.querySelector('.item-preco');
+                const precoStr = precoInput ? precoInput.value : '0';
+                const preco = parseFloat(precoStr) || 0;
+                
+                console.log(`Item ${index+1} - Quantidade: ${quantidade}, Preço unitário: ${precoStr} (${preco})`);
+                
+                // Calcular o subtotal com precisão decimal
+                const subtotal = quantidade * preco;
+                console.log(`Item ${index+1} - Subtotal calculado: ${subtotal.toFixed(2)}`);
+                
+                // Atualizar o subtotal na linha
+                const subtotalEl = row.querySelector('.item-subtotal');
+                if (subtotalEl) {
+                    subtotalEl.value = formatarMoeda(subtotal);
+                    console.log(`Item ${index+1} - Subtotal formatado: ${subtotalEl.value}`);
+                }
+                
+                // Adicionar ao total geral
+                total += subtotal;
+                if (quantidade > 0) totalItens++;
+            });
+            
+            // Arredondar o total para 2 casas decimais para evitar problemas de precisão
+            total = parseFloat(total.toFixed(2));
+            console.log('Total calculado (após arredondamento):', total.toFixed(2));
+            
+            // Atualizar os totais no resumo
+            document.getElementById('total-itens').textContent = totalItens;
+            document.getElementById('subtotal-pedido').textContent = 'R$ ' + formatarMoeda(total);
+            document.getElementById('total-pedido').textContent = 'R$ ' + formatarMoeda(total);
+            
+            // Atualizar o campo oculto de valor total - usar ponto como separador decimal para o Django
+            const valorTotalInput = document.getElementById('id_valor_total');
+            if (valorTotalInput) {
+                valorTotalInput.value = total.toFixed(2); // Manter o ponto como separador decimal
+                console.log('Valor total atualizado no campo oculto:', valorTotalInput.value);
+            } else {
+                console.error('Campo valor_total não encontrado!');
+            }
+            
+            return total;
+        }
+        
+        // Função para formatar valores monetários durante a digitação
+        function aplicarMascaraMonetaria(elemento) {
+            // Encontrar o campo oculto correspondente
+            const hiddenInput = elemento.nextElementSibling;
+            
+            elemento.addEventListener('input', function() {
+                console.log('Digitação em campo de preço:', this.value);
+                
+                // Obter apenas os dígitos do valor
+                let valor = this.value.replace(/\D/g, '');
+                
+                // Se não houver valor, deixar vazio
+                if (valor === '') {
+                    this.value = '';
+                    if (hiddenInput) {
+                        hiddenInput.value = '0.00';
+                        console.log('Campo oculto zerado:', hiddenInput.value);
+                    }
+                    calcularTotal(); // Chamar diretamente calcularTotal para atualizar tudo
+                    return;
+                }
+                
+                // Converter para centavos e depois para formato monetário
+                // Preservar exatamente o valor decimal sem arredondamento
+                const valorNumerico = parseInt(valor) / 100;
+                console.log('Valor convertido para número:', valorNumerico);
+                
+                // Atualizar o campo oculto com formato americano (preservando os decimais exatos)
+                if (hiddenInput) {
+                    // Usar toFixed(2) para garantir 2 casas decimais exatas
+                    hiddenInput.value = valorNumerico.toFixed(2);
+                    console.log('Campo oculto atualizado:', hiddenInput.value);
+                }
+                
+                // Formatar para exibição no formato brasileiro
+                this.value = formatarMoeda(valorNumerico);
+                console.log('Campo de exibição formatado:', this.value);
+                
+                // Chamar diretamente calcularTotal para atualizar tudo
+                calcularTotal();
+            });
+        }
+        
+        // Aplicar máscaras a todos os campos de preço (apenas nos campos de exibição)
+        document.querySelectorAll('.item-preco-display').forEach(aplicarMascaraMonetaria);
+        
+        // Adicionar event listeners para campos de quantidade
+        document.querySelectorAll('.item-quantidade').forEach(input => {
+            input.addEventListener('input', function() {
+                calcularSubtotalItem(this.closest('tr'));
+                calcularTotal();
+            });
+        });
+        
+        // Atualizar ao marcar/desmarcar checkbox de DELETE
+        document.querySelectorAll('.item-delete').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const row = this.closest('tr');
+                if (this.checked) {
+                    row.classList.add('table-danger', 'text-decoration-line-through');
+                } else {
+                    row.classList.remove('table-danger', 'text-decoration-line-through');
+                }
+                calcularTotal();
+            });
+        });
+        
+        // Event listener para botões de remover item
+        document.querySelectorAll('.btn-remover-item').forEach(btn => {
+            btn.addEventListener('click', function() {
+                this.closest('tr').remove();
+                calcularTotal();
+            });
+        });
+        
+        // Botão para recalcular o total
+        document.getElementById('btnCalcularTotal').addEventListener('click', calcularTotal);
+        
+        // Adicionar novo item
+        const btnAdicionarItem = document.getElementById('btn-adicionar-item');
+        if (btnAdicionarItem) {
+            btnAdicionarItem.addEventListener('click', function() {
+                // Obter o formset management form
+                const totalFormsInput = document.querySelector('input[name="itens-TOTAL_FORMS"]');
+                if (!totalFormsInput) {
+                    alert('Erro: Não foi possível encontrar o formulário de gerenciamento de itens.');
+                    return;
+                }
+                
+                const totalForms = parseInt(totalFormsInput.value);
+                const newFormIdx = totalForms;
+                
+                // Clonar o primeiro item
+                const firstRow = document.querySelector('tr.item-row');
+                if (!firstRow) {
+                    alert('Erro: Não foi possível encontrar a linha de item para clonar.');
+                    return;
+                }
+                
+                const newRow = firstRow.cloneNode(true);
+                
+                // Atualizar os IDs e names dos campos
+                newRow.querySelectorAll('input, select').forEach(input => {
+                    const name = input.getAttribute('name');
+                    if (name) {
+                        const newName = name.replace(/-(\d+)-/, '-' + newFormIdx + '-');
+                        input.setAttribute('name', newName);
+                        input.setAttribute('id', 'id_' + newName);
+                        
+                        // Limpar valores
+                        if (input.type !== 'hidden') {
+                            input.value = '';
+                        }
+                    }
+                });
+                
+                // Mostrar o botão de remover
+                const removeBtn = newRow.querySelector('.btn-remover-item');
+                if (removeBtn) removeBtn.style.display = 'inline-block';
+                
+                // Remover classes de erro e marcação
+                newRow.classList.remove('table-danger', 'text-decoration-line-through');
+                
+                // Adicionar à tabela
+                document.querySelector('#tabela-itens tbody').appendChild(newRow);
+                
+                // Atualizar o contador de formulários
+                totalFormsInput.value = totalForms + 1;
+                
+                // Adicionar novo item
+                const novoPrecoDisplay = newRow.querySelector('.item-preco-display');
+                if (novoPrecoDisplay) {
+                    novoPrecoDisplay.value = '';
+                    aplicarMascaraMonetaria(novoPrecoDisplay);
+                }
+                
+                // Limpar o campo oculto
+                const novoPrecoInput = newRow.querySelector('.item-preco');
+                if (novoPrecoInput) {
+                    novoPrecoInput.value = '0.00';
+                }
+                
+                const novaQuantidadeInput = newRow.querySelector('.item-quantidade');
+                if (novaQuantidadeInput) {
+                    novaQuantidadeInput.addEventListener('input', function() {
+                        calcularSubtotalItem(this.closest('tr'));
+                        calcularTotal();
+                    });
+                }
+                
+                const novoBtnRemover = newRow.querySelector('.btn-remover-item');
+                if (novoBtnRemover) {
+                    novoBtnRemover.addEventListener('click', function() {
+                        this.closest('tr').remove();
+                        calcularTotal();
+                    });
+                }
+                
+                // Recalcular o total
+                calcularTotal();
+            });
+        }
+        
+        // Calcular total inicial
+        setTimeout(calcularTotal, 300);
+    });
+    
+    // Função para validar o formulário antes de enviar
+    function validarFormulario() {
+        // Limpar mensagens de erro anteriores
+        limparMensagensErro();
+        
+        // Calcular o total novamente para garantir que está atualizado
+        const total = calcularTotal();
+        
+        // Verificar se há pelo menos um item válido no pedido
+        const rows = document.querySelectorAll('tr.item-row:not(.table-danger)');
+        let itemValido = false;
+        
+        rows.forEach(row => {
+            const quantidade = parseInt(row.querySelector('.item-quantidade').value) || 0;
+            const precoInput = row.querySelector('.item-preco');
+            const preco = precoInput ? parseFloat(precoInput.value) || 0 : 0;
+            
+            if (quantidade > 0 && preco > 0) {
+                itemValido = true;
+            }
+        });
+        
+        if (!itemValido) {
+            mostrarMensagemErro('Adicione pelo menos um item válido ao pedido antes de salvar.');
+            return false;
+        }
+        
+        // Verificar se o valor total é maior que zero
+        if (total <= 0) {
+            mostrarMensagemErro('O valor total do pedido deve ser maior que zero.');
+            return false;
+        }
+        
+        // Verificar se o campo valor_total está preenchido
+        const valorTotalInput = document.getElementById('id_valor_total');
+        if (!valorTotalInput || !valorTotalInput.value) {
+            mostrarMensagemErro('Erro: O valor total do pedido não foi calculado corretamente.');
+            return false;
+        }
+        
+        return true;
+    }
+    
+    // Função para mostrar mensagens de erro com estilo
+    function mostrarMensagemErro(mensagem) {
+        // Criar um elemento de alerta estilizado
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-danger alert-dismissible fade show';
+        alertDiv.role = 'alert';
+        
+        // Adicionar ícone e mensagem
+        alertDiv.innerHTML = `
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            ${mensagem}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        
+        // Adicionar à área de mensagens de erro
+        const mensagensErro = document.getElementById('mensagens-erro');
+        if (mensagensErro) {
+            mensagensErro.appendChild(alertDiv);
+        } else {
+            // Fallback: adicionar ao topo do formulário
+            const form = document.getElementById('pedidoForm');
+            form.prepend(alertDiv);
+        }
+        
+        // Rolar para o topo para mostrar a mensagem
+        window.scrollTo(0, 0);
+    }
+    
+    // Função para limpar mensagens de erro
+    function limparMensagensErro() {
+        const mensagensErro = document.getElementById('mensagens-erro');
+        if (mensagensErro) {
+            mensagensErro.innerHTML = '';
+        }
+    }
+</script>
 {% endblock %}

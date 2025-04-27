@@ -1,54 +1,213 @@
 {% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Ordens de Produção{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
-    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Produção</li>
-    <li class="breadcrumb-item active" aria-current="page">Ordens de Produção</li>
+    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-house"></i> Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'producao:dashboard' %}" class="text-decoration-none"><i class="bi bi-gear"></i> Produção</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-list-check"></i> Ordens de Produção</li>
   </ol>
 </nav>
 {% endblock %}
+
 {% block content %}
 <div class="container-fluid">
+    <!-- Cabeçalho e botões de ação -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">Ordens de Produção</h2>
-        <a href="{% url 'producao:ordem_create' %}" class="btn btn-success">
-            <i class="bi bi-plus-lg"></i> Nova Ordem
-        </a>
+        <div>
+            <h2 class="fw-bold mb-0">Ordens de Produção</h2>
+            <p class="text-muted">Gerenciamento de ordens de produção da fábrica</p>
+        </div>
+        <div>
+            <a href="{% url 'producao:ordem_create' %}" class="btn btn-success">
+                <i class="bi bi-plus-lg"></i> Nova Ordem
+            </a>
+        </div>
     </div>
-<div class="container">
-    <table class="table table-striped">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Produto</th>
-                <th>Quantidade</th>
-                <th>Status</th>
-                <th>Data Início</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for ordem in object_list %}
-            <tr>
-                <td>{{ ordem.id }}</td>
-                <td>{{ ordem.produto.nome }}</td>
-                <td>{{ ordem.quantidade }}</td>
-                <td>{{ ordem.get_status_display }}</td>
-                <td>{{ ordem.data_inicio|date:"d/m/Y" }}</td>
-                <td>
-                    <a href="{% url 'producao:ordem_detail' ordem.pk %}" class="btn btn-sm btn-info">Detalhes</a>
-<a href="{% url 'producao:ordem_edit' ordem.pk %}" class="btn btn-sm btn-warning ms-1">Editar</a>
-<a href="{% url 'producao:ordem_delete' ordem.pk %}" class="btn btn-sm btn-danger ms-1">Excluir</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="7">Nenhuma ordem de produção encontrada.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+
+    <!-- Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total de Ordens</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_ordens }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-clipboard-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Ordens Finalizadas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ordens_finalizadas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Em Produção</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ordens_em_producao }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-gear-wide-connected fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Planejadas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ordens_planejadas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-calendar-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros e Tabela -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-list-check"></i> Lista de Ordens</h6>
+            <div class="d-flex gap-2">
+                <div class="input-group" style="width: 250px;">
+                    <select id="filtroStatus" class="form-select form-select-sm">
+                        <option value="">Todos os Status</option>
+                        <option value="PLANEJADA">Planejada</option>
+                        <option value="EM_PRODUCAO">Em Produção</option>
+                        <option value="FINALIZADA">Finalizada</option>
+                        <option value="CANCELADA">Cancelada</option>
+                    </select>
+                </div>
+                <div class="input-group" style="width: 250px;">
+                    <input type="text" id="filtroOrdens" class="form-control form-control-sm" placeholder="Buscar ordem...">
+                    <button class="btn btn-outline-secondary btn-sm" type="button">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped" id="tabelaOrdens">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Produto</th>
+                            <th>Quantidade</th>
+                            <th>Status</th>
+                            <th>Data Início</th>
+                            <th>Responsável</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ordem in object_list %}
+                        <tr>
+                            <td><span class="fw-bold">OP-{{ ordem.id }}</span></td>
+                            <td>{{ ordem.produto.nome }}</td>
+                            <td>{{ ordem.quantidade }}</td>
+                            <td>
+                                {% if ordem.status == 'PLANEJADA' %}
+                                    <span class="badge bg-info">{{ ordem.get_status_display }}</span>
+                                {% elif ordem.status == 'EM_PRODUCAO' %}
+                                    <span class="badge bg-primary">{{ ordem.get_status_display }}</span>
+                                {% elif ordem.status == 'FINALIZADA' %}
+                                    <span class="badge bg-success">{{ ordem.get_status_display }}</span>
+                                {% elif ordem.status == 'CANCELADA' %}
+                                    <span class="badge bg-danger">{{ ordem.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ ordem.data_inicio|date:"d/m/Y" }}</td>
+                            <td>{{ ordem.responsavel.get_full_name|default:ordem.responsavel.username }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'producao:ordem_detail' ordem.pk %}" class="btn btn-sm btn-info" title="Detalhes">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'producao:ordem_edit' ordem.pk %}" class="btn btn-sm btn-primary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'producao:ordem_delete' ordem.pk %}" class="btn btn-sm btn-danger" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-clipboard-x mb-3" style="font-size: 2rem;"></i>
+                                <p class="mb-0">Nenhuma ordem de produção encontrada.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filtro por status
+        const filtroStatus = document.getElementById('filtroStatus');
+        const filtroOrdens = document.getElementById('filtroOrdens');
+        const tabela = document.getElementById('tabelaOrdens');
+        const linhas = tabela.querySelectorAll('tbody tr');
+
+        function filtrarTabela() {
+            const textoFiltro = filtroOrdens.value.toLowerCase();
+            const statusFiltro = filtroStatus.value;
+
+            linhas.forEach(linha => {
+                const produto = linha.cells[1].textContent.toLowerCase();
+                const statusTexto = linha.cells[3].textContent.trim().toLowerCase();
+                const statusClasse = linha.cells[3].querySelector('.badge')?.classList.toString().toLowerCase() || '';
+                const statusMatch = !statusFiltro || 
+                                   statusTexto.includes(statusFiltro.toLowerCase()) || 
+                                   linha.cells[3].querySelector('.badge')?.classList.contains(`bg-${statusFiltro.toLowerCase()}`);
+                const textoMatch = !textoFiltro || 
+                                 produto.includes(textoFiltro) || 
+                                 linha.cells[0].textContent.toLowerCase().includes(textoFiltro);
+
+                linha.style.display = (statusMatch && textoMatch) ? '' : 'none';
+            });
+        }
+
+        filtroStatus.addEventListener('change', filtrarTabela);
+        filtroOrdens.addEventListener('input', filtrarTabela);
+    });
+</script>
 {% endblock %}

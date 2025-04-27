@@ -1,142 +1,238 @@
 {% extends "base.html" %}
 {% load i18n %}
 
+{% block title %}Dashboard de Produção{% endblock %}
+
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
-    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Produção</li>
+    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-house"></i> Dashboard</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-gear"></i> Produção</li>
   </ol>
 </nav>
 {% endblock %}
+
 {% block content %}
 <div class="container-fluid">
-    <h2 class="fw-bold mb-4">Dashboard Produção</h2>
+    <!-- Cabeçalho e botões de ação -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">Dashboard de Produção</h2>
+            <p class="text-muted">Visão geral da produção e indicadores de desempenho</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'producao:lista_ordens' %}" class="btn btn-primary">
+                <i class="bi bi-list-check"></i> Ordens de Produção
+            </a>
+            <a href="{% url 'producao:produto_list' %}" class="btn btn-info">
+                <i class="bi bi-box-seam"></i> Produtos
+            </a>
+            <a href="{% url 'producao:ordem_create' %}" class="btn btn-success">
+                <i class="bi bi-plus-lg"></i> Nova Ordem
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de resumo -->
     <div class="row mb-4">
-        <div class="col-md-4 mb-3">
-            <div class="card text-white bg-primary shadow-sm">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
                 <div class="card-body">
-                    <h6 class="card-title">Ordens no Mês</h6>
-                    <h3>{{ total_ordens_mes }}</h3>
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Ordens no Mês</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_ordens_mes }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-clipboard-check fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card text-white bg-success shadow-sm">
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
                 <div class="card-body">
-                    <h6 class="card-title">Produzido no Mês</h6>
-                    <h3>{{ total_produzido_mes }}</h3>
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Produzido no Mês</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_produzido_mes }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-box-seam fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="card text-white bg-warning shadow-sm">
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
                 <div class="card-body">
-                    <h6 class="card-title">Alertas de Estoque</h6>
-                    <h3>{{ alertas_estoque|length }}</h3>
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Alertas de Estoque</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ alertas_estoque|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Ordens em Andamento</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ ordens_andamento|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-gear-wide-connected fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Gráficos e Tabelas -->
     <div class="row">
-        <div class="col-md-8">
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-light">
-                    <h5 class="mb-0">{% trans "Produção Mensal" %}</h5>
+        <!-- Gráfico de Produção Mensal -->
+        <div class="col-lg-8 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-bar-chart"></i> {% trans "Produção Mensal" %}</h6>
                 </div>
                 <div class="card-body">
                     <canvas id="producaoChart" height="300"></canvas>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script id="meses" type="application/json">{{ meses|safe }}</script>
-<script id="quantidades" type="application/json">{{ quantidades|safe }}</script>
-<script>
-    const meses = JSON.parse(document.getElementById('meses').textContent);
-    const quantidades = JSON.parse(document.getElementById('quantidades').textContent);
-    const ctx = document.getElementById('producaoChart').getContext('2d');
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: meses,
-            datasets: [{
-                label: 'Ordens Finalizadas',
-                data: quantidades,
-                backgroundColor: '#0d6efd',
-                borderColor: '#0d6efd',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 }
-                }
-            }
-        }
-    });
-</script>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card">
-                <div class="card-header bg-warning">
-                    <h5>{% trans "Alertas de Estoque" %}</h5>
+
+        <!-- Alertas de Estoque -->
+        <div class="col-lg-4 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-warning"><i class="bi bi-exclamation-triangle"></i> {% trans "Alertas de Estoque" %}</h6>
+                    <a href="{% url 'estoque:estoque_list' %}" class="btn btn-sm btn-warning">
+                        <i class="bi bi-box"></i> Ver Estoque
+                    </a>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     {% if alertas_estoque %}
-                    <ul class="list-group">
-                    {% for alerta in alertas_estoque %}
-                    <li class="list-group-item">
-                        {{ alerta.materia_prima }} - 
-                        {{ alerta.quantidade_atual }} {{ alerta.unidade_medida }}
-                        (mín: {{ alerta.estoque_minimo }})
-                    </li>
-                    {% endfor %}
-                </ul>
-                {% else %}
-                <p>{% trans "Nenhum alerta de estoque" %}</p>
-                {% endif %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Matéria-Prima</th>
+                                    <th>Atual</th>
+                                    <th>Mínimo</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for alerta in alertas_estoque %}
+                                <tr>
+                                    <td>{{ alerta.materia_prima }}</td>
+                                    <td>{{ alerta.quantidade_atual }}</td>
+                                    <td>{{ alerta.estoque_minimo }}</td>
+                                    <td>
+                                        {% if alerta.quantidade_atual == 0 %}
+                                            <span class="badge bg-danger">Esgotado</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">Baixo</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                        <p class="mt-2 mb-0">{% trans "Nenhum alerta de estoque no momento" %}</p>
+                    </div>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<div class="row mt-4">
-    <div class="col-12">
-        <h2>{% trans "Ordens em Andamento" %}</h2>
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>{% trans "Número" %}</th>
-                    <th>{% trans "Produto" %}</th>
-                    <th>{% trans "Quantidade" %}</th>
-                    <th>{% trans "Status" %}</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for ordem in ordens_andamento %}
-                <tr>
-                    <td><a href="{{ ordem.get_absolute_url }}">OP-{{ ordem.id }}</a></td>
-                    <td>{{ ordem.produto.nome }}</td>
-                    <td>{{ ordem.quantidade }}</td>
-                    <td>{{ ordem.get_status_display }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4">{% trans "Nenhuma ordem em andamento" %}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Ordens em Andamento -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-gear-wide-connected"></i> {% trans "Ordens em Andamento" %}</h6>
+                    <a href="{% url 'producao:lista_ordens' %}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-list-check"></i> Ver Todas
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>{% trans "Número" %}</th>
+                                    <th>{% trans "Produto" %}</th>
+                                    <th>{% trans "Quantidade" %}</th>
+                                    <th>{% trans "Status" %}</th>
+                                    <th>{% trans "Início" %}</th>
+                                    <th>{% trans "Ações" %}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ordem in ordens_andamento %}
+                                <tr>
+                                    <td><span class="fw-bold">OP-{{ ordem.id }}</span></td>
+                                    <td>{{ ordem.produto.nome }}</td>
+                                    <td>{{ ordem.quantidade }}</td>
+                                    <td>
+                                        {% if ordem.status == 'PLANEJADA' %}
+                                            <span class="badge bg-info">{{ ordem.get_status_display }}</span>
+                                        {% elif ordem.status == 'EM_PRODUCAO' %}
+                                            <span class="badge bg-primary">{{ ordem.get_status_display }}</span>
+                                        {% elif ordem.status == 'FINALIZADA' %}
+                                            <span class="badge bg-success">{{ ordem.get_status_display }}</span>
+                                        {% elif ordem.status == 'CANCELADA' %}
+                                            <span class="badge bg-danger">{{ ordem.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ ordem.data_inicio|date:"d/m/Y" }}</td>
+                                    <td>
+                                        <a href="{% url 'producao:ordem_detail' ordem.pk %}" class="btn btn-sm btn-info">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{% url 'producao:ordem_edit' ordem.pk %}" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        <i class="bi bi-clipboard-x mb-3" style="font-size: 2rem;"></i>
+                                        <p class="mb-0">{% trans "Nenhuma ordem em andamento no momento" %}</p>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Gráfico de produção mensal
@@ -149,16 +245,49 @@ document.addEventListener('DOMContentLoaded', function() {
                 datasets: [{
                     label: '{% trans "Quantidade Produzida" %}',
                     data: JSON.parse('{{ quantidades|escapejs }}'),
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
+                    backgroundColor: 'rgba(78, 115, 223, 0.7)',
+                    borderColor: 'rgba(78, 115, 223, 1)',
                     borderWidth: 1
                 }]
             },
             options: {
+                maintainAspectRatio: false,
                 responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgb(255, 255, 255)',
+                        bodyColor: '#858796',
+                        titleMarginBottom: 10,
+                        titleColor: '#6e707e',
+                        titleFontSize: 14,
+                        borderColor: '#dddfeb',
+                        borderWidth: 1,
+                        padding: 15,
+                        displayColors: false
+                    }
+                },
                 scales: {
                     y: {
-                        beginAtZero: true
+                        beginAtZero: true,
+                        grid: {
+                            borderDash: [2],
+                            drawBorder: false,
+                            zeroLineColor: "rgba(0, 0, 0, 0.1)",
+                            zeroLineBorderDash: [2],
+                            zeroLineBorderDashOffset: [2]
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false,
+                            drawBorder: false
+                        }
                     }
                 }
             }

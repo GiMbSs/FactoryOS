@@ -1,58 +1,165 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
-{% block title %}Cadastro de Matéria-Prima{% endblock %}
+
+{% block title %}{% if form.instance.pk %}Editar Matéria-Prima{% else %}Nova Matéria-Prima{% endif %}{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Aplicar máscara de valor monetário
+    $('#id_custo_unitario').mask('#.##0,00', {reverse: true});
+    $('#id_estoque_minimo').mask('#.##0,00', {reverse: true});
+});
+</script>
+{% endblock %}
+
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
-    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
-    <li class="breadcrumb-item">Produção</li>
-    <li class="breadcrumb-item active" aria-current="page">Cadastro</li>
+    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-house"></i> Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'producao:dashboard' %}" class="text-decoration-none"><i class="bi bi-gear"></i> Produção</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'producao:materiaprima_list' %}" class="text-decoration-none"><i class="bi bi-box2"></i> Matérias-Primas</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-plus-circle"></i> {% if form.instance.pk %}Editar Matéria-Prima{% else %}Nova Matéria-Prima{% endif %}</li>
   </ol>
 </nav>
 {% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-7 col-md-9">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h2 class="mb-4 fw-bold text-primary">Cadastro de Matéria-Prima</h2>
-                {% if messages %}
-    {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="container-fluid">
+    <!-- Cabeçalho e botões de ação -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">{% if form.instance.pk %}Editar Matéria-Prima: {{ form.instance.nome }}{% else %}Nova Matéria-Prima{% endif %}</h2>
+            <p class="text-muted">{% if form.instance.pk %}Atualizar informações da matéria-prima{% else %}Registrar nova matéria-prima no sistema{% endif %}</p>
         </div>
-    {% endfor %}
-{% endif %}
-<form method="post" autocomplete="off">
-                    {% csrf_token %}
+        <div>
+            <a href="{% url 'producao:materiaprima_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar para Lista
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="row mb-4">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="bi bi-info-circle me-2"></i> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-box2"></i> Informações da Matéria-Prima</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" autocomplete="off" id="materiaPrimaForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="id_nome" class="form-label fw-bold">Nome <span class="text-danger">*</span></label>
+                                {% render_field form.nome class="form-control" placeholder="Nome da matéria-prima" %}
+                                {% if form.nome.errors %}
+                                <div class="invalid-feedback d-block">{{ form.nome.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="id_tipo" class="form-label fw-bold">Tipo <span class="text-danger">*</span></label>
+                                {% render_field form.tipo class="form-select" %}
+                                {% if form.tipo.errors %}
+                                <div class="invalid-feedback d-block">{{ form.tipo.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_descricao" class="form-label fw-bold">Descrição</label>
+                            {% render_field form.descricao class="form-control" placeholder="Descrição detalhada da matéria-prima" rows="3" %}
+                            {% if form.descricao.errors %}
+                            <div class="invalid-feedback d-block">{{ form.descricao.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="id_unidade_medida" class="form-label fw-bold">Unidade de Medida <span class="text-danger">*</span></label>
+                                {% render_field form.unidade_medida class="form-select" %}
+                                {% if form.unidade_medida.errors %}
+                                <div class="invalid-feedback d-block">{{ form.unidade_medida.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="id_custo_unitario" class="form-label fw-bold">Custo Unitário (R$) <span class="text-danger">*</span></label>
+                                {% render_field form.custo_unitario class="form-control" placeholder="0,00" %}
+                                {% if form.custo_unitario.errors %}
+                                <div class="invalid-feedback d-block">{{ form.custo_unitario.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="id_estoque_minimo" class="form-label fw-bold">Estoque Mínimo <span class="text-danger">*</span></label>
+                                {% render_field form.estoque_minimo class="form-control" placeholder="0,00" %}
+                                {% if form.estoque_minimo.errors %}
+                                <div class="invalid-feedback d-block">{{ form.estoque_minimo.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end mt-4">
+                            <a href="{% url 'producao:materiaprima_list' %}" class="btn btn-outline-secondary me-2">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Salvar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 col-md-10">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-info-circle"></i> Informações Adicionais</h6>
+                </div>
+                <div class="card-body">
                     <div class="mb-3">
-                        <label for="nome" class="form-label">Nome</label>
-                        {% render_field form.nome class="form-control" %}
+                        <h6 class="fw-bold">Tipos de Matéria-Prima</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span><i class="bi bi-circle-fill text-primary me-2"></i> Matéria-Prima Básica</span>
+                                <span class="badge bg-primary rounded-pill">Insumo principal</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span><i class="bi bi-circle-fill text-success me-2"></i> Componente</span>
+                                <span class="badge bg-success rounded-pill">Parte do produto</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                <span><i class="bi bi-circle-fill text-info me-2"></i> Embalagem</span>
+                                <span class="badge bg-info rounded-pill">Finalização</span>
+                            </li>
+                        </ul>
                     </div>
+                    
                     <div class="mb-3">
-                        <label for="descricao" class="form-label">Descrição</label>
-                        {% render_field form.descricao class="form-control" %}
+                        <h6 class="fw-bold">Unidades de Medida</h6>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item px-0"><i class="bi bi-rulers me-2"></i> Kg - Quilograma</li>
+                            <li class="list-group-item px-0"><i class="bi bi-rulers me-2"></i> L - Litro</li>
+                            <li class="list-group-item px-0"><i class="bi bi-rulers me-2"></i> Un - Unidade</li>
+                            <li class="list-group-item px-0"><i class="bi bi-rulers me-2"></i> m - Metro</li>
+                            <li class="list-group-item px-0"><i class="bi bi-rulers me-2"></i> m² - Metro quadrado</li>
+                        </ul>
                     </div>
-                    <div class="mb-3">
-                        <label for="tipo" class="form-label">Tipo</label>
-                        {% render_field form.tipo class="form-select" %}
-                    </div>
-                    <div class="mb-3">
-                        <label for="unidade_medida" class="form-label">Unidade de Medida</label>
-                        {% render_field form.unidade_medida class="form-select" %}
-                    </div>
-                    <div class="mb-3">
-                        <label for="custo_unitario" class="form-label">Custo Unitário</label>
-                        {% render_field form.custo_unitario class="form-control" %}
-                    </div>
-                    <div class="mb-3">
-                        <label for="estoque_minimo" class="form-label">Estoque Mínimo</label>
-                        {% render_field form.estoque_minimo class="form-control" %}
-                    </div>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                    <a href="{% url 'producao:materiaprima_list' %}" class="btn btn-secondary">Cancelar</a>
-                </form>
+                </div>
             </div>
         </div>
     </div>

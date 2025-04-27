@@ -41,11 +41,13 @@ class MovimentacaoEstoque(models.Model):
             raise ValidationError("A quantidade deve ser maior que zero")
         
         if self.tipo_movimento == 'SAIDA':
-            from .models import SaldoEstoque
-            produto = Produto.objects.get(materia_prima=self.materia_prima)
-            saldo = SaldoEstoque.objects.get(materia_prima=self.materia_prima)
-            if self.quantidade > saldo.quantidade_atual:
-                raise ValidationError("Quantidade em estoque insuficiente")
+            # Evita referência circular e melhora a validação
+            try:
+                saldo = SaldoEstoque.objects.get(materia_prima=self.materia_prima)
+                if self.quantidade > saldo.quantidade_atual:
+                    raise ValidationError(f"Quantidade em estoque insuficiente. Disponível: {saldo.quantidade_atual} {self.materia_prima.unidade_medida}")
+            except SaldoEstoque.DoesNotExist:
+                raise ValidationError(f"Não há saldo de estoque para {self.materia_prima}")
 
 class SaldoEstoque(models.Model):
     materia_prima = models.OneToOneField(

@@ -1,138 +1,260 @@
 {% extends "base.html" %}
 {% load i18n widget_tweaks %}
 
+{% block title %}{% if form.instance.pk %}Editar Ordem #{{ form.instance.pk }}{% else %}Nova Ordem de Produção{% endif %}{% endblock %}
+
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
-    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
-    <li class="breadcrumb-item"><a href="{% url 'producao:lista_ordens' %}">Ordens de Produção</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Nova Ordem</li>
+    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-house"></i> Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'producao:dashboard' %}" class="text-decoration-none"><i class="bi bi-gear"></i> Produção</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'producao:lista_ordens' %}" class="text-decoration-none"><i class="bi bi-list-check"></i> Ordens de Produção</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{% if form.instance.pk %}Editar Ordem{% else %}Nova Ordem{% endif %}</li>
   </ol>
 </nav>
 {% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-7 col-md-9">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h2 class="mb-4 fw-bold text-primary">Nova Ordem de Produção</h2>
-                <form method="post" autocomplete="off">
-    {% if form.errors %}
-        <div class="alert alert-danger">
-            <ul class="mb-0">
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
-                    {% endfor %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
+<div class="container-fluid">
+    <!-- Cabeçalho e botões de ação -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">{% if form.instance.pk %}Editar Ordem de Produção #{{ form.instance.pk }}{% else %}Nova Ordem de Produção{% endif %}</h2>
+            <p class="text-muted">{% if form.instance.pk %}Atualizar informações da ordem{% else %}Cadastrar nova ordem de produção{% endif %}</p>
         </div>
+        <div>
+            <a href="{% url 'producao:lista_ordens' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar para Lista
+            </a>
+        </div>
+    </div>
+
+    {% if form.errors %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <h5 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i> Corrija os erros abaixo:</h5>
+                <ul class="mb-0 mt-2">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+            </div>
+        </div>
+    </div>
     {% endif %}
-<div class="row">
-    <div class="col-md-8 mx-auto">
-        <h2>{% trans "Nova Ordem de Produção" %}</h2>
-        <form method="post" id="ordemForm">
-            {% csrf_token %}
+
+    <div class="row">
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-clipboard-plus"></i> Informações da Ordem</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" autocomplete="off" id="ordemForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="data_inicio" id="id_data_inicio" />
+                        
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="id_produto" class="form-label fw-bold">Produto <span class="text-danger">*</span></label>
+                                {% render_field form.produto class="form-select" %}
+                                {% if form.produto.errors %}
+                                <div class="invalid-feedback d-block">{{ form.produto.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="id_quantidade" class="form-label fw-bold">Quantidade <span class="text-danger">*</span></label>
+                                {% render_field form.quantidade class="form-control" min="1" %}
+                                {% if form.quantidade.errors %}
+                                <div class="invalid-feedback d-block">{{ form.quantidade.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_status" class="form-label fw-bold">Status <span class="text-danger">*</span></label>
+                                {% render_field form.status class="form-select" %}
+                                {% if form.status.errors %}
+                                <div class="invalid-feedback d-block">{{ form.status.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_responsavel" class="form-label fw-bold">Responsável <span class="text-danger">*</span></label>
+                                {% render_field form.responsavel class="form-select" %}
+                                {% if form.responsavel.errors %}
+                                <div class="invalid-feedback d-block">{{ form.responsavel.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="card mt-4 mb-4 border-0 shadow-sm">
+                            <div class="card-header bg-light py-3">
+                                <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-box-seam"></i> {% trans "Matérias-Primas Necessárias" %}</h6>
+                            </div>
+                            <div class="card-body">
+<div id="materiasPrimasContainer" class="p-3">
+    <div class="text-center py-4">
+        <i class="bi bi-box2 text-muted" style="font-size: 2rem;"></i>
+        <p class="mt-2 mb-0 text-muted">Selecione um produto e quantidade para ver as matérias-primas necessárias</p>
+    </div>
+</div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'producao:lista_ordens' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> {% if form.instance.pk %}Atualizar{% else %}Criar{% endif %} Ordem
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4 col-md-10">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-info-circle"></i> Informações Adicionais</h6>
+                </div>
+                <div class="card-body">
+                    {% if form.instance.pk %}
+                    <div class="mb-3">
+                        <p class="mb-1 fw-bold">Data de Criação:</p>
+                        <p>{{ form.instance.data_inicio|date:"d/m/Y" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <p class="mb-1 fw-bold">Status Atual:</p>
+                        <p>
+                            {% if form.instance.status == 'PLANEJADA' %}
+                                <span class="badge bg-info">{{ form.instance.get_status_display }}</span>
+                            {% elif form.instance.status == 'EM_PRODUCAO' %}
+                                <span class="badge bg-primary">{{ form.instance.get_status_display }}</span>
+                            {% elif form.instance.status == 'FINALIZADA' %}
+                                <span class="badge bg-success">{{ form.instance.get_status_display }}</span>
+                            {% elif form.instance.status == 'CANCELADA' %}
+                                <span class="badge bg-danger">{{ form.instance.get_status_display }}</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% if form.instance.data_finalizacao %}
+                    <div class="mb-3">
+                        <p class="mb-1 fw-bold">Data de Finalização:</p>
+                        <p>{{ form.instance.data_finalizacao|date:"d/m/Y" }}</p>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle me-2"></i> Preencha o formulário ao lado para cadastrar uma nova ordem de produção.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
             
-            <div class="mb-3">
-                {{ form.produto.label_tag }}
-                {{ form.produto|add_class:"form-select" }}
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-question-circle"></i> Ajuda</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="mb-1 fw-bold">Status da Ordem:</p>
+                        <p class="mb-0"><span class="badge bg-info">Planejada</span> - Ordem criada, aguardando início</p>
+                        <p class="mb-0"><span class="badge bg-primary">Em Produção</span> - Ordem em andamento</p>
+                        <p class="mb-0"><span class="badge bg-success">Finalizada</span> - Produção concluída</p>
+                        <p class="mb-0"><span class="badge bg-danger">Cancelada</span> - Ordem cancelada</p>
+                    </div>
+                    <div class="mb-3">
+                        <p class="mb-1 fw-bold">Campos Obrigatórios:</p>
+                        <p>Os campos marcados com <span class="text-danger">*</span> são de preenchimento obrigatório.</p>
+                    </div>
+                </div>
             </div>
-
-            <div class="mb-3">
-    {{ form.quantidade.label_tag }}
-    {{ form.quantidade|add_class:"form-control" }}
-</div>
-<input type="hidden" name="data_inicio" id="id_data_inicio" />
-<div class="mb-3">
-    {{ form.status.label_tag }}
-    {{ form.status|add_class:"form-select" }}
-</div>
-
-            <div class="mb-3">
-    <label>{% trans "Matérias-Primas Necessárias" %}</label>
-    <div id="materiasPrimasContainer" class="border p-3 mb-3">
-        <p class="text-muted">{% trans "Selecione um produto e quantidade para ver as matérias-primas necessárias" %}</p>
-    </div>
-</div>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Preencher data_inicio automaticamente
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('id_data_inicio').value = today;
-
-        function atualizarMateriasPrimas() {
-            const produtoId = document.getElementById('id_produto').value;
-            const quantidade = document.getElementById('id_quantidade').value;
-            const container = document.getElementById('materiasPrimasContainer');
-            if (!produtoId || !quantidade || quantidade <= 0) {
-                container.innerHTML = '<p class="text-muted">Selecione um produto e quantidade para ver as matérias-primas necessárias</p>';
-                return;
-            }
-            fetch(`/producao/api/produtos/${produtoId}/materias-primas/?quantidade=${quantidade}`)
-                .then(resp => resp.json())
-                .then(data => {
-                    if (data.length === 0) {
-                        container.innerHTML = '<p class="text-danger">Nenhuma matéria-prima cadastrada para este produto.</p>';
-                        return;
-                    }
-                    let html = '<ul class="mb-0">';
-                    data.forEach(item => {
-                        html += `<li><b>${item.materia_prima}</b>: ${item.quantidade_total} ${item.unidade}</li>`;
-                    });
-                    html += '</ul>';
-                    container.innerHTML = html;
-                })
-                .catch(() => {
-                    container.innerHTML = '<p class="text-danger">Erro ao buscar matérias-primas.</p>';
-                });
-        }
-        document.getElementById('id_produto').addEventListener('change', atualizarMateriasPrimas);
-        document.getElementById('id_quantidade').addEventListener('input', atualizarMateriasPrimas);
-    });
-</script>
-    </div>
-</div>
-
-            <div class="mb-3">
-                {{ form.responsavel.label_tag }}
-                {{ form.responsavel|add_class:"form-select" }}
-            </div>
-
-            <button type="submit" class="btn btn-primary">{% trans "Salvar" %}</button>
-        </form>
+        </div>
     </div>
 </div>
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const produtoSelect = document.querySelector('#id_produto');
-    const materiasContainer = document.querySelector('#materiasPrimasContainer');
-    
-    produtoSelect.addEventListener('change', function() {
-        const produtoId = this.value;
-        if (produtoId) {
-            fetch(`/producao/api/api/produtos/${produtoId}/`)
-                .then(response => response.json())
-                .then(data => {
-                    let html = '<table class="table"><thead><tr><th>Material</th><th>Quantidade</th></tr></thead><tbody>';
-                    data.materias_primas.forEach(item => {
-                        html += `<tr>
-                            <td>${item.materia_prima.nome}</td>
-                            <td>${item.quantidade_utilizada} ${item.materia_prima.unidade_medida}</td>
-                        </tr>`;
-                    });
-                    html += '</tbody></table>';
-                    materiasContainer.innerHTML = html;
-                });
-        } else {
-            materiasContainer.innerHTML = '<p class="text-muted">{% trans "Selecione um produto para ver as matérias-primas necessárias" %}</p>';
+    // Função para atualizar matérias-primas
+    function atualizarMateriasPrimas() {
+        const produtoId = document.getElementById('id_produto').value;
+        const quantidade = document.getElementById('id_quantidade').value;
+        const container = document.getElementById('materiasPrimasContainer');
+        
+        if (!produtoId || !quantidade || quantidade <= 0) {
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <i class="bi bi-box2 text-muted" style="font-size: 2rem;"></i>
+                    <p class="mt-2 mb-0 text-muted">Selecione um produto e quantidade para ver as matérias-primas necessárias</p>
+                </div>
+            `;
+            return;
         }
-    });
+        
+        // Mostrar indicador de carregamento
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Carregando...</span>
+                </div>
+                <p class="mt-2 mb-0">Calculando matérias-primas necessárias...</p>
+            </div>
+        `;
+        
+        // Buscar matérias-primas
+        fetch(`/producao/api/produtos/${produtoId}/materias-primas/?quantidade=${quantidade}`)
+            .then(resp => resp.json())
+            .then(data => {
+                if (!data || data.length === 0) {
+                    container.innerHTML = `<div class="alert alert-warning mb-0"><i class="bi bi-exclamation-triangle me-2"></i><span>Nenhuma matéria-prima cadastrada para este produto.</span></div>`;
+                    return;
+                }
+                let html = `<div class="table-responsive"><table class="table table-hover table-sm mb-0"><thead class="table-light"><tr><th>Matéria-Prima</th><th>Quantidade Necessária</th><th>Disponível</th><th>Status</th></tr></thead><tbody>`;
+                data.forEach(item => {
+                    html += `<tr><td>${item.materia_prima}</td><td>${item.quantidade_total} ${item.unidade}</td><td>${item.estoque_disponivel} ${item.unidade}</td><td>`;
+                    if (item.suficiente) {
+                        html += `<span class="badge bg-success">Disponível</span>`;
+                    } else {
+                        html += `<span class="badge bg-danger">Insuficiente</span>`;
+                    }
+                    html += `</td></tr>`;
+                });
+                html += `</tbody></table></div>`;
+                container.innerHTML = html;
+            })
+            .catch(() => {
+                container.innerHTML = `
+                    <div class="alert alert-danger mb-0">
+                        <i class="bi bi-exclamation-circle me-2"></i>
+                        <span>Erro ao buscar matérias-primas. Tente novamente.</span>
+                    </div>
+                `;
+            });
+    }
+    
+    // Adicionar listeners para atualizar matérias-primas
+    const produtoSelect = document.getElementById('id_produto');
+    const quantidadeInput = document.getElementById('id_quantidade');
+    
+    if (produtoSelect && quantidadeInput) {
+        produtoSelect.addEventListener('change', atualizarMateriasPrimas);
+        quantidadeInput.addEventListener('input', atualizarMateriasPrimas);
+        // Inicializar se já tiver valores
+        if (produtoSelect.value && quantidadeInput.value) {
+            atualizarMateriasPrimas();
+        }
+    }
 });
 </script>
 {% endblock %}

@@ -1,51 +1,213 @@
 {% extends "base.html" %}
+{% load i18n %}
+
 {% block title %}Produtos{% endblock %}
+
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
-    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Produção</li>
-    <li class="breadcrumb-item active" aria-current="page">Produtos</li>
+    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-house"></i> Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'producao:dashboard' %}" class="text-decoration-none"><i class="bi bi-gear"></i> Produção</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-box-seam"></i> Produtos</li>
   </ol>
 </nav>
 {% endblock %}
+
 {% block content %}
 <div class="container-fluid">
+    <!-- Cabeçalho e botões de ação -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">Produtos</h2>
-        <a href="{% url 'producao:produto_create' %}" class="btn btn-success">
-            <i class="bi bi-plus-lg"></i> Novo Produto
-        </a>
+        <div>
+            <h2 class="fw-bold mb-0">Produtos</h2>
+            <p class="text-muted">Gerenciamento de produtos fabricados</p>
+        </div>
+        <div>
+            <a href="{% url 'producao:produto_create' %}" class="btn btn-success">
+                <i class="bi bi-plus-lg"></i> Novo Produto
+            </a>
+        </div>
     </div>
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Nome</th>
-                    <th>Descrição</th>
-                    <th>SKU</th>
-                    <th>Tipo</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for produto in produtos %}
-                <tr>
-                    <td>{{ produto.nome }}</td>
-                    <td>{{ produto.descricao }}</td>
-                    <td>{{ produto.codigo_sku }}</td>
-                    <td>{{ produto.get_tipo_display }}</td>
-                    <td>
-                        <a href="#" class="btn btn-sm btn-info">Editar</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5">Nenhum produto cadastrado</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+    <!-- Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total de Produtos</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_produtos }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-box-seam fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Produtos de Madeira</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ produtos_madeira }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-tree fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Produtos de Tecido</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ produtos_tecido }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-layers fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Produtos de Plástico</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ produtos_plastico }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-droplet fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros e Tabela -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-box-seam"></i> Lista de Produtos</h6>
+            <div class="d-flex gap-2">
+                <div class="input-group" style="width: 250px;">
+                    <select id="filtroTipo" class="form-select form-select-sm">
+                        <option value="">Todos os Tipos</option>
+                        <option value="PLASTICO">Plástico</option>
+                        <option value="MADEIRA">Madeira</option>
+                        <option value="TECIDO">Tecido</option>
+                        <option value="MISTO">Misto</option>
+                    </select>
+                </div>
+                <div class="input-group" style="width: 250px;">
+                    <input type="text" id="filtroProdutos" class="form-control form-control-sm" placeholder="Buscar produto...">
+                    <button class="btn btn-outline-secondary btn-sm" type="button">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped" id="tabelaProdutos">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>SKU</th>
+                            <th>Tipo</th>
+                            <th>Custo</th>
+                            <th>Matérias-Primas</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for produto in produtos %}
+                        <tr>
+                            <td>
+                                <span class="fw-bold">{{ produto.nome }}</span>
+                                <div class="small text-muted">{{ produto.descricao|truncatechars:50 }}</div>
+                            </td>
+                            <td><code>{{ produto.codigo_sku }}</code></td>
+                            <td>
+                                {% if produto.tipo == 'PLASTICO' %}
+                                    <span class="badge bg-info">{{ produto.get_tipo_display }}</span>
+                                {% elif produto.tipo == 'MADEIRA' %}
+                                    <span class="badge bg-success">{{ produto.get_tipo_display }}</span>
+                                {% elif produto.tipo == 'TECIDO' %}
+                                    <span class="badge bg-primary">{{ produto.get_tipo_display }}</span>
+                                {% elif produto.tipo == 'MISTO' %}
+                                    <span class="badge bg-warning">{{ produto.get_tipo_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>R$ {{ produto.calcular_custo }}</td>
+                            <td>{{ produto.materias_primas.count }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="#" class="btn btn-sm btn-info" title="Detalhes">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'producao:produto_edit' produto.pk %}" class="btn btn-sm btn-primary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'producao:produto_delete' produto.pk %}" class="btn btn-sm btn-danger" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4 text-muted">
+                                <i class="bi bi-box-seam mb-3" style="font-size: 2rem;"></i>
+                                <p class="mb-0">Nenhum produto cadastrado.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filtro por tipo
+        const filtroTipo = document.getElementById('filtroTipo');
+        const filtroProdutos = document.getElementById('filtroProdutos');
+        const tabela = document.getElementById('tabelaProdutos');
+        const linhas = tabela.querySelectorAll('tbody tr');
+
+        function filtrarTabela() {
+            const textoFiltro = filtroProdutos.value.toLowerCase();
+            const tipoFiltro = filtroTipo.value;
+
+            linhas.forEach(linha => {
+                const nome = linha.cells[0].textContent.toLowerCase();
+                const tipoTexto = linha.cells[2].textContent.trim().toLowerCase();
+                const tipoMatch = !tipoFiltro || 
+                                 tipoTexto.includes(tipoFiltro.toLowerCase()) || 
+                                 linha.cells[2].querySelector('.badge')?.classList.contains(`bg-${tipoFiltro.toLowerCase()}`);
+                const textoMatch = !textoFiltro || 
+                                  nome.includes(textoFiltro) || 
+                                  linha.cells[1].textContent.toLowerCase().includes(textoFiltro);
+                
+                linha.style.display = (tipoMatch && textoMatch) ? '' : 'none';
+            });
+        }
+
+        filtroTipo.addEventListener('change', filtrarTabela);
+        filtroProdutos.addEventListener('input', filtrarTabela);
+    });
+</script>
 {% endblock %}

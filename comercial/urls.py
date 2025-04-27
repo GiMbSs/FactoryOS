@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import DashboardView, ClienteListView, ClienteCreateView, ClienteUpdateView, VendaCreateView, VendaUpdateView, VendaListView, VendaDeleteView, FornecedorListView, FornecedorCreateView, ToggleClienteView
+from .views import DashboardView, ClienteListView, ClienteCreateView, ClienteUpdateView, VendaCreateView, VendaUpdateView, VendaListView, VendaDeleteView, FornecedorListView, FornecedorCreateView, ToggleClienteView, VendaUpdateStatusView
 
 app_name = 'comercial'
 
@@ -18,4 +18,5 @@ urlpatterns = [
     path('pedidos/novo/', VendaCreateView.as_view(), name='pedido_create'),
     path('pedidos/<int:pk>/editar/', VendaUpdateView.as_view(), name='pedido_edit'),
     path('pedidos/<int:pk>/excluir/', VendaDeleteView.as_view(), name='pedido_delete'),
+    path('pedidos/<int:pk>/update-status/', VendaUpdateStatusView.as_view(), name='pedido_update_status'),
 ]

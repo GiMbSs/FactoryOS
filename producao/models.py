@@ -1,7 +1,47 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from django.utils.text import slugify
+
+class Categoria(models.Model):
+    nome = models.CharField('Nome', max_length=100)
+    descricao = models.TextField('Descrição', blank=True)
+    slug = models.SlugField('Slug', max_length=100, unique=True)
+    segmento = models.CharField('Segmento', max_length=50, default='coadores')
+    icone = models.CharField('Ícone', max_length=50, blank=True, help_text='Nome do ícone Bootstrap, ex: bi-box')
+    cor = models.CharField('Cor', max_length=20, default='primary', help_text='Nome da cor Bootstrap: primary, success, etc')
+    ordem = models.PositiveSmallIntegerField('Ordem', default=0)
+    ativo = models.BooleanField('Ativo', default=True)
+    
+    class Meta:
+        verbose_name = 'Categoria'
+        verbose_name_plural = 'Categorias'
+        ordering = ['ordem', 'nome']
+    
+    def __str__(self):
+        return self.nome
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.nome)
+        super().save(*args, **kwargs)
+
+
+class UnidadeMedida(models.Model):
+    nome = models.CharField('Nome', max_length=50)
+    sigla = models.CharField('Sigla', max_length=10)
+    descricao = models.TextField('Descrição', blank=True)
+    
+    class Meta:
+        verbose_name = 'Unidade de Medida'
+        verbose_name_plural = 'Unidades de Medida'
+        ordering = ['nome']
+    
+    def __str__(self):
+        return f"{self.sigla} - {self.nome}"
+
 
 class MateriaPrima(models.Model):
+    # Mantemos os TIPO_CHOICES para compatibilidade com código existente
     TIPO_CHOICES = [
         ('MADEIRA_BRUTA', 'Madeira Bruta'),
         ('VARETA_MADEIRA', 'Vareta de Madeira'),
@@ -10,6 +50,7 @@ class MateriaPrima(models.Model):
         ('CABO_PLASTICO', 'Cabo Plástico'),
     ]
     
+    # Mantemos os UNIDADE_CHOICES para compatibilidade com código existente
     UNIDADE_CHOICES = [
         ('KG', 'Quilograma'),
         ('METRO', 'Metro'),
@@ -18,8 +59,25 @@ class MateriaPrima(models.Model):
 
     nome = models.CharField('Nome', max_length=100)
     descricao = models.TextField('Descrição', blank=True)
+    # Mantemos o campo tipo para compatibilidade, mas adicionamos categoria
     tipo = models.CharField('Tipo', max_length=20, choices=TIPO_CHOICES)
+    categoria = models.ForeignKey(
+        Categoria, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        verbose_name='Categoria'
+    )
+    # Mantemos o campo unidade_medida para compatibilidade, mas adicionamos unidade
     unidade_medida = models.CharField('Unidade de Medida', max_length=10, choices=UNIDADE_CHOICES)
+    unidade = models.ForeignKey(
+        UnidadeMedida, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        verbose_name='Unidade'
+    )
+    codigo = models.CharField('Código', max_length=20, blank=True, help_text='Código interno ou SKU do fornecedor')
     custo_unitario = models.DecimalField(
         'Custo Unitário', 
         max_digits=10, 
@@ -32,6 +90,15 @@ class MateriaPrima(models.Model):
         max_digits=10, 
         decimal_places=2, 
         default=0
+    )
+    imagem = models.ImageField('Imagem', upload_to='materias_primas/', blank=True, null=True)
+    fornecedor_padrao = models.ForeignKey(
+        'comercial.Fornecedor',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Fornecedor Padrão',
+        related_name='materias_primas'
     )
     ativo = models.BooleanField('Ativo', default=True)
 
@@ -47,6 +114,8 @@ class Produto(models.Model):
     TIPO_CHOICES = [
         ('PLASTICO', 'Plástico'),
         ('MADEIRA', 'Madeira'),
+        ('TECIDO', 'Tecido'),
+        ('MISTO', 'Misto'),
     ]
 
     nome = models.CharField('Nome', max_length=100)

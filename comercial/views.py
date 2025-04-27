@@ -3,6 +3,7 @@ from core.views import registrar_log
 from django.shortcuts import get_object_or_404, redirect
 from django.views import View
 from django.urls import reverse_lazy
+from django.utils import timezone
 from .models import Cliente, Venda, Fornecedor, ItemVenda
 from .forms import ClienteForm, VendaForm, FornecedorForm, ItemVendaForm
 from django.forms import inlineformset_factory
@@ -12,6 +13,27 @@ class FornecedorListView(ListView):
     template_name = 'comercial/fornecedor_list.html'
     context_object_name = 'fornecedores'
     paginate_by = 10
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        from producao.models import MateriaPrima
+        
+        # Contar total de matérias-primas
+        context['materias_primas_count'] = MateriaPrima.objects.count()
+        
+        # Contar compras no mês atual
+        from django.utils import timezone
+        # Aqui você precisaria ter um modelo de Compra ou usar alguma outra lógica
+        # para contar as compras. Como não temos esse modelo, vamos usar um valor padrão
+        context['compras_mes'] = 0
+        
+        # Contar novos fornecedores no mês atual
+        context['novos_fornecedores_mes'] = Fornecedor.objects.filter(
+            data_cadastro__month=timezone.now().month,
+            data_cadastro__year=timezone.now().year
+        ).count()
+        
+        return context
 
 class FornecedorUpdateView(UpdateView):
     model = Fornecedor
@@ -61,6 +83,21 @@ class ClienteListView(ListView):
     context_object_name = 'clientes'
     paginate_by = 10
     ordering = ['nome']
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Adicionar contagem de clientes ativos
+        context['clientes_ativos'] = Cliente.objects.filter(ativo=True).count()
+        # Adicionar outras estatísticas úteis
+        # Contar total de vendas (usando o nome do relacionamento reverso correto)
+        from .models import Venda
+        context['total_vendas'] = Venda.objects.count()
+        # Contar novos clientes do mês atual
+        context['novos_clientes_mes'] = Cliente.objects.filter(
+            data_cadastro__month=timezone.now().month,
+            data_cadastro__year=timezone.now().year
+        ).count()
+        return context
 
 class ClienteDeleteView(DeleteView):
     model = Cliente
@@ -192,6 +229,70 @@ class VendaListView(ListView):
     context_object_name = 'pedidos'
     paginate_by = 10
     ordering = ['-data_venda']
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Calcular faturamento total
+        from django.db.models import Sum
+        context['faturamento_total'] = Venda.objects.filter(status='FECHADA').aggregate(Sum('valor_total'))['valor_total__sum'] or 0
+        # Contar pedidos pendentes
+        context['pedidos_pendentes'] = Venda.objects.filter(status='ABERTA').count()
+        # Contar pedidos do mês atual
+        context['pedidos_mes'] = Venda.objects.filter(
+            data_venda__month=timezone.now().month,
+            data_venda__year=timezone.now().year
+        ).count()
+        return context
+
+class VendaUpdateStatusView(View):
+    def post(self, request, pk):
+        venda = get_object_or_404(Venda, pk=pk)
+        status = request.POST.get('status')
+        observacao = request.POST.get('observacao', '')
+        data_vencimento = request.POST.get('data_vencimento')
+        
+        # Verificar status anterior
+        status_anterior = venda.status
+        
+        # Permitir apenas os status ABERTA e FECHADA
+        if status in ['ABERTA', 'FECHADA']:
+            venda.status = status
+            if observacao:
+                venda.observacoes = observacao
+            venda.save()
+            
+            # Se a venda foi fechada e não estava fechada antes, criar conta a receber
+            if status == 'FECHADA' and status_anterior != 'FECHADA':
+                from financeiro.models import ContaReceber
+                from django.utils import timezone
+                import datetime
+                
+                # Se não foi informada data de vencimento, usar data atual + 30 dias
+                if not data_vencimento:
+                    data_vencimento = (timezone.now() + datetime.timedelta(days=30)).date()
+                else:
+                    # Converter string para data
+                    from datetime import datetime as dt
+                    data_vencimento = dt.strptime(data_vencimento, '%Y-%m-%d').date()
+                
+                # Criar conta a receber
+                conta_receber = ContaReceber.objects.create(
+                    cliente=venda.cliente,
+                    valor=venda.valor_total,
+                    data_vencimento=data_vencimento,
+                    status='PENDENTE',
+                    observacoes=f"Gerado automaticamente da venda #{venda.id}. {observacao}"
+                )
+                
+                registrar_log(request, 'Financeiro', f'Criou conta a receber automática da venda #{venda.id}: {conta_receber.cliente} - R${conta_receber.valor}')
+                messages.success(request, f'Conta a receber criada automaticamente para o cliente {venda.cliente.nome}')
+            
+            registrar_log(request, 'Comercial', f'Alterou status do pedido #{venda.id} para {venda.get_status_display()}')
+            messages.success(request, f'Status do pedido #{venda.id} alterado para {venda.get_status_display()}')
+        else:
+            messages.error(request, 'Status inválido')
+            
+        return redirect('comercial:pedido_list')
 
 class DashboardView(TemplateView):
     template_name = 'comercial/dashboard.html'

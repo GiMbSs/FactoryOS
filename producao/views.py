@@ -38,6 +38,33 @@ class ProdutoListView(LoginRequiredMixin, ListView):
     template_name = 'producao/produto_list.html'
     context_object_name = 'produtos'
     ordering = ['nome']
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Adiciona contagens por tipo de produto
+        context['total_produtos'] = Produto.objects.count()
+        context['produtos_madeira'] = Produto.objects.filter(tipo='MADEIRA').count()
+        context['produtos_plastico'] = Produto.objects.filter(tipo='PLASTICO').count()
+        context['produtos_tecido'] = Produto.objects.filter(tipo='TECIDO').count()
+        context['produtos_misto'] = Produto.objects.filter(tipo='MISTO').count()
+        
+        # Adiciona estatísticas adicionais
+        from django.utils import timezone
+        from django.db.models import Avg
+        
+        # Custo médio dos produtos
+        produtos = Produto.objects.all()
+        total_custo = 0
+        for produto in produtos:
+            total_custo += produto.calcular_custo()
+        
+        if produtos.count() > 0:
+            context['custo_medio'] = total_custo / produtos.count()
+        else:
+            context['custo_medio'] = 0
+            
+        return context
 
 class ProdutoCreateView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
@@ -75,6 +102,39 @@ class MateriaPrimaListView(LoginRequiredMixin, ListView):
     template_name = 'producao/materiaprima_list.html'
     context_object_name = 'materias_primas'
     ordering = ['nome']
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Adiciona contagens por tipo
+        context['total_materias'] = MateriaPrima.objects.count()
+        context['materias_ativas'] = MateriaPrima.objects.filter(ativo=True).count()
+        
+        # Contagens por tipo
+        context['materias_madeira'] = MateriaPrima.objects.filter(tipo='MADEIRA_BRUTA').count() + \
+                                     MateriaPrima.objects.filter(tipo='VARETA_MADEIRA').count()
+        context['materias_tecido'] = MateriaPrima.objects.filter(tipo='TECIDO_MALHA').count() + \
+                                    MateriaPrima.objects.filter(tipo='TECIDO_PANO_CRU').count()
+        context['materias_plastico'] = MateriaPrima.objects.filter(tipo='CABO_PLASTICO').count()
+        
+        # Estatísticas adicionais
+        from django.db.models import Sum, Avg
+        from django.utils import timezone
+        
+        # Custo total das matérias-primas
+        context['custo_total'] = MateriaPrima.objects.aggregate(Sum('custo_unitario'))['custo_unitario__sum'] or 0
+        
+        # Verifica se há matérias-primas abaixo do estoque mínimo
+        try:
+            from estoque.models import SaldoEstoque
+            context['materias_abaixo_minimo'] = SaldoEstoque.objects.filter(
+                quantidade_atual__lt=models.F('materia_prima__estoque_minimo'),
+                materia_prima__estoque_minimo__gt=0
+            ).count()
+        except ImportError:
+            context['materias_abaixo_minimo'] = 0
+        
+        return context
 
 class MateriaPrimaCreateView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
@@ -169,6 +229,35 @@ class OrdemProducaoListView(ListView):
     template_name = 'producao/ordemproducao_list.html'
     paginate_by = 10
     ordering = ['-data_inicio']
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Adiciona contagens por status
+        context['total_ordens'] = OrdemProducao.objects.count()
+        context['ordens_planejadas'] = OrdemProducao.objects.filter(status='PLANEJADA').count()
+        context['ordens_em_producao'] = OrdemProducao.objects.filter(status='EM_PRODUCAO').count()
+        context['ordens_finalizadas'] = OrdemProducao.objects.filter(status='FINALIZADA').count()
+        context['ordens_canceladas'] = OrdemProducao.objects.filter(status='CANCELADA').count()
+        
+        # Adiciona estatísticas adicionais
+        from django.utils import timezone
+        hoje = timezone.now().date()
+        mes_atual = timezone.now().month
+        ano_atual = timezone.now().year
+        
+        context['ordens_mes_atual'] = OrdemProducao.objects.filter(
+            data_inicio__month=mes_atual,
+            data_inicio__year=ano_atual
+        ).count()
+        
+        context['ordens_finalizadas_mes'] = OrdemProducao.objects.filter(
+            status='FINALIZADA',
+            data_fim__month=mes_atual,
+            data_fim__year=ano_atual
+        ).count()
+        
+        return context
 
 class OrdemProducaoCreateView(CreateView):
     model = OrdemProducao

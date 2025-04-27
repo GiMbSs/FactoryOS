@@ -5,81 +5,242 @@
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
-    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Estoque</li>
+    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-house"></i> Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'estoque:dashboard' %}" class="text-decoration-none"><i class="bi bi-box"></i> Estoque</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-list-check"></i> Materiais</li>
   </ol>
 </nav>
 {% endblock %}
 {% block content %}
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold">Materiais em Estoque</h2>
-    <div>
-
-        <a href="{% url 'estoque:materiaprima_create' %}" class="btn btn-primary">
-    <i class="bi bi-plus-circle"></i> Nova Matéria-Prima
-</a>
-<a href="{% url 'producao:produto_create' %}" class="btn btn-success ms-2">
-    <i class="bi bi-box-seam"></i> Novo Produto Acabado
-</a>
+        <h2 class="fw-bold">Materiais em Estoque</h2>
+        <div>
+            <a href="{% url 'estoque:materiaprima_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Nova Matéria-Prima
+            </a>
+            <a href="{% url 'producao:produto_create' %}" class="btn btn-success ms-2">
+                <i class="bi bi-box-seam"></i> Novo Produto Acabado
+            </a>
+        </div>
     </div>
-</div>
-<div class="container">
-    <h2>Lista de Matérias-Primas em Estoque</h2>
-<table class="table table-striped">
-    <thead>
+    
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Lista de Matérias-Primas em Estoque</h5>
+            <div class="input-group" style="max-width: 300px;">
+                <input type="text" id="filtroMateriasPrimas" class="form-control" placeholder="Filtrar matérias-primas...">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+<table class="table table-striped table-hover">
+    <thead class="table-light">
         <tr>
             <th>Matéria-prima</th>
             <th>Quantidade</th>
             <th>Unidade</th>
             <th>Valor Unitário</th>
+            <th>Status</th>
             <th>Ações</th>
         </tr>
     </thead>
     <tbody>
         {% for materia in materias_primas %}
-        <tr>
+        <tr class="align-middle">
             <td>{{ materia.nome }}</td>
             <td>{{ materia.saldoestoque.quantidade_atual|default:0 }}</td>
             <td>{{ materia.unidade_medida }}</td>
             <td>R$ {{ materia.custo_unitario }}</td>
             <td>
-                <a href="{% url 'estoque:materiaprima_edit' materia.pk %}" class="btn btn-sm btn-primary">Editar</a>
-                <a href="{% url 'estoque:materiaprima_delete' materia.pk %}" class="btn btn-sm btn-danger ms-2">Excluir</a>
+                {% with qtd=materia.saldoestoque.quantidade_atual|default:0 min=materia.estoque_minimo %}
+                    {% if qtd <= 0 %}
+                        <span class="badge bg-danger">Sem estoque</span>
+                    {% elif qtd <= min %}
+                        <span class="badge bg-warning text-dark">Estoque baixo</span>
+                    {% else %}
+                        <span class="badge bg-success">Normal</span>
+                    {% endif %}
+                {% endwith %}
+            </td>
+            <td>
+                <div class="btn-group">
+                    <a href="{% url 'estoque:materiaprima_edit' materia.pk %}" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i></a>
+                    <a href="{% url 'estoque:materiaprima_delete' materia.pk %}" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></a>
+                </div>
             </td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="4">Nenhuma matéria-prima cadastrada</td>
+            <td colspan="6" class="text-center py-3">Nenhuma matéria-prima cadastrada</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
-<h2 class="mt-5">Lista de Produtos Acabados em Estoque</h2>
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Produto</th>
-            <th>SKU</th>
-            <th>Tipo</th>
-            <th>Quantidade em Estoque</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for item in produtos_acabados %}
-        <tr>
-            <td>{{ item.produto.nome }}</td>
-            <td>{{ item.produto.codigo_sku }}</td>
-            <td>{{ item.produto.get_tipo_display }}</td>
-            <td>{{ item.quantidade_estoque }}</td>
-        </tr>
-        {% empty %}
-        <tr>
-            <td colspan="4">Nenhum produto acabado cadastrado</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<nav aria-label="Paginação de matérias-primas">
+    <ul class="pagination justify-content-center">
+        <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
+        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+        <li class="page-item"><a class="page-link" href="#">2</a></li>
+        <li class="page-item"><a class="page-link" href="#">3</a></li>
+        <li class="page-item"><a class="page-link" href="#">Próximo</a></li>
+    </ul>
+</nav>
+
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Lista de Produtos Acabados em Estoque</h5>
+            <div class="input-group" style="max-width: 300px;">
+                <input type="text" id="filtroProdutos" class="form-control" placeholder="Filtrar produtos...">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead class="table-light">
+                    <tr>
+                        <th>Produto</th>
+                        <th>SKU</th>
+                        <th>Tipo</th>
+                        <th>Quantidade em Estoque</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in produtos_acabados %}
+                    <tr class="align-middle">
+                        <td>{{ item.produto.nome }}</td>
+                        <td>{{ item.produto.codigo_sku }}</td>
+                        <td>{{ item.produto.get_tipo_display }}</td>
+                        <td>{{ item.quantidade_estoque }}</td>
+                        <td>
+                            {% if item.quantidade_estoque <= 0 %}
+                                <span class="badge bg-danger">Sem estoque</span>
+                            {% elif item.quantidade_estoque <= 10 %}
+                                <span class="badge bg-warning text-dark">Estoque baixo</span>
+                            {% else %}
+                                <span class="badge bg-success">Normal</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group">
+                                <a href="{% url 'producao:produto_edit' item.produto.pk %}" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i></a>
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#detalhesModal{{ item.produto.pk }}"><i class="bi bi-info-circle"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-3">Nenhum produto acabado cadastrado</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <nav aria-label="Paginação de produtos acabados">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item disabled"><a class="page-link" href="#">Anterior</a></li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item"><a class="page-link" href="#">Próximo</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Modais de detalhes para cada produto -->
+    {% for item in produtos_acabados %}
+    <div class="modal fade" id="detalhesModal{{ item.produto.pk }}" tabindex="-1" aria-labelledby="detalhesModalLabel{{ item.produto.pk }}" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="detalhesModalLabel{{ item.produto.pk }}">Detalhes do Produto: {{ item.produto.nome }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Informações Gerais</h6>
+                            <p><strong>Nome:</strong> {{ item.produto.nome }}</p>
+                            <p><strong>SKU:</strong> {{ item.produto.codigo_sku }}</p>
+                            <p><strong>Tipo:</strong> {{ item.produto.get_tipo_display }}</p>
+                            <p><strong>Estoque Atual:</strong> {{ item.quantidade_estoque }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Composição</h6>
+                            <ul class="list-group">
+                                {% for comp in item.produto.produtomateriaprima_set.all %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ comp.materia_prima.nome }}
+                                    <span class="badge bg-primary rounded-pill">{{ comp.quantidade_utilizada }} {{ comp.materia_prima.unidade_medida }}</span>
+                                </li>
+                                {% empty %}
+                                <li class="list-group-item">Nenhuma matéria-prima associada</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <a href="{% url 'producao:produto_edit' item.produto.pk %}" class="btn btn-primary">Editar Produto</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 </div>
+
+<script>
+    // Script para filtro de tabelas
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filtro para matérias-primas
+        const inputMateriasPrimas = document.getElementById('filtroMateriasPrimas');
+        if (inputMateriasPrimas) {
+            inputMateriasPrimas.addEventListener('keyup', function() {
+                const termo = this.value.toLowerCase();
+                const tabela = this.closest('.card').querySelector('table tbody');
+                const linhas = tabela.querySelectorAll('tr');
+                
+                linhas.forEach(linha => {
+                    const texto = linha.textContent.toLowerCase();
+                    if (texto.indexOf(termo) > -1) {
+                        linha.style.display = '';
+                    } else {
+                        linha.style.display = 'none';
+                    }
+                });
+            });
+        }
+        
+        // Filtro para produtos
+        const inputProdutos = document.getElementById('filtroProdutos');
+        if (inputProdutos) {
+            inputProdutos.addEventListener('keyup', function() {
+                const termo = this.value.toLowerCase();
+                const tabela = this.closest('.card').querySelector('table tbody');
+                const linhas = tabela.querySelectorAll('tr');
+                
+                linhas.forEach(linha => {
+                    const texto = linha.textContent.toLowerCase();
+                    if (texto.indexOf(termo) > -1) {
+                        linha.style.display = '';
+                    } else {
+                        linha.style.display = 'none';
+                    }
+                });
+            });
+        }
+    });
+</script>
 {% endblock %}

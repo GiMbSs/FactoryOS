@@ -1,129 +1,476 @@
 {% extends "base.html" %}
 
+{% block title %}Dashboard Financeiro{% endblock %}
+
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
-    <li class="breadcrumb-item"><a href="{% url 'financeiro:dashboard' %}">Dashboard</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Financeiro</li>
+    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-house"></i> Dashboard</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-currency-dollar"></i> Financeiro</li>
   </ol>
 </nav>
 {% endblock %}
+
 {% block content %}
 <div class="container-fluid">
-    <h2 class="fw-bold mb-4">Dashboard Financeiro</h2>
+    <!-- Cabeçalho e botões de ação -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">Dashboard Financeiro</h2>
+            <p class="text-muted">Visão geral das finanças e indicadores financeiros</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'financeiro:conta_pagar_list' %}" class="btn btn-primary">
+                <i class="bi bi-cash-stack"></i> Contas a Pagar
+            </a>
+            <a href="{% url 'financeiro:conta_receber_list' %}" class="btn btn-info">
+                <i class="bi bi-cash"></i> Contas a Receber
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de resumo -->
     <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="card text-white bg-primary shadow-sm">
+        <!-- Card de saldo -->
+        <div class="col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h6 class="card-title">Contas a Pagar Pendentes</h6>
-                    <h3>{{ contas_pagar_pendentes }}</h3>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title fw-bold mb-0">Saldo Atual</h5>
+                        <span class="badge {% if saldo >= 0 %}bg-success{% else %}bg-danger{% endif %} fs-6 px-3 py-2">
+                            <i class="bi {% if saldo >= 0 %}bi-graph-up-arrow{% else %}bi-graph-down-arrow{% endif %} me-1"></i>
+                            R$ {{ saldo|floatformat:2 }}
+                        </span>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h6 class="text-muted mb-1">Total Recebido</h6>
+                            <h5 class="text-success">R$ {{ valor_receber_recebido|floatformat:2 }}</h5>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-muted mb-1">Total Pago</h6>
+                            <h5 class="text-danger">R$ {{ valor_pagar_pago|floatformat:2 }}</h5>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-3 mb-3">
-            <div class="card text-white bg-success shadow-sm">
+
+        <!-- Card de previsão -->
+        <div class="col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
-                    <h6 class="card-title">Contas a Pagar Pagas</h6>
-                    <h3>{{ contas_pagar_pagas }}</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card text-white bg-warning shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-title">Contas a Receber Pendentes</h6>
-                    <h3>{{ contas_receber_pendentes }}</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card text-white bg-info shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-title">Contas a Receber Recebidas</h6>
-                    <h3>{{ contas_receber_recebidas }}</h3>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title fw-bold mb-0">Previsão Financeira</h5>
+                        <span class="badge bg-primary fs-6 px-3 py-2">
+                            <i class="bi bi-calendar-check me-1"></i>
+                            Pendentes
+                        </span>
+                    </div>
+                    <hr>
+                    <div class="row text-center">
+                        <div class="col-6">
+                            <h6 class="text-muted mb-1">A Receber</h6>
+                            <h5 class="text-primary">R$ {{ valor_receber_pendente|floatformat:2 }}</h5>
+                        </div>
+                        <div class="col-6">
+                            <h6 class="text-muted mb-1">A Pagar</h6>
+                            <h5 class="text-primary">R$ {{ valor_pagar_pendente|floatformat:2 }}</h5>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Cards de contagem -->
     <div class="row mb-4">
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-light">
-                    Situação Contas a Pagar
-                </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm bg-gradient" style="background-color: #f0f8ff;">
                 <div class="card-body">
-                    <canvas id="graficoPagar"></canvas>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-primary fw-bold">Contas a Pagar</h6>
+                            <h3 class="mb-0">{{ contas_pagar_pendentes }}</h3>
+                            <p class="text-muted small mb-0">Pendentes</p>
+                        </div>
+                        <div class="fs-1 text-primary opacity-25">
+                            <i class="bi bi-cash-stack"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 py-2">
+                    <a href="{% url 'financeiro:conta_pagar_list' %}" class="text-decoration-none">
+                        <small>Ver detalhes <i class="bi bi-arrow-right"></i></small>
+                    </a>
                 </div>
             </div>
         </div>
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-light">
-                    Situação Contas a Receber
-                </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm bg-gradient" style="background-color: #f0fff0;">
                 <div class="card-body">
-                    <canvas id="graficoReceber"></canvas>
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-success fw-bold">Contas Pagas</h6>
+                            <h3 class="mb-0">{{ contas_pagar_pagas }}</h3>
+                            <p class="text-muted small mb-0">Liquidadas</p>
+                        </div>
+                        <div class="fs-1 text-success opacity-25">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 py-2">
+                    <a href="{% url 'financeiro:conta_pagar_list' %}" class="text-decoration-none">
+                        <small>Ver detalhes <i class="bi bi-arrow-right"></i></small>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm bg-gradient" style="background-color: #fffff0;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-warning fw-bold">Contas a Receber</h6>
+                            <h3 class="mb-0">{{ contas_receber_pendentes }}</h3>
+                            <p class="text-muted small mb-0">Pendentes</p>
+                        </div>
+                        <div class="fs-1 text-warning opacity-25">
+                            <i class="bi bi-cash"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 py-2">
+                    <a href="{% url 'financeiro:conta_receber_list' %}" class="text-decoration-none">
+                        <small>Ver detalhes <i class="bi bi-arrow-right"></i></small>
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card border-0 shadow-sm bg-gradient" style="background-color: #f0f8ff;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title text-info fw-bold">Contas Recebidas</h6>
+                            <h3 class="mb-0">{{ contas_receber_recebidas }}</h3>
+                            <p class="text-muted small mb-0">Liquidadas</p>
+                        </div>
+                        <div class="fs-1 text-info opacity-25">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 py-2">
+                    <a href="{% url 'financeiro:conta_receber_list' %}" class="text-decoration-none">
+                        <small>Ver detalhes <i class="bi bi-arrow-right"></i></small>
+                    </a>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Vendas Finalizadas -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-cart-check"></i> Vendas Finalizadas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-left-success shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total de Vendas</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ vendas_finalizadas }}</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="bi bi-cart-check fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-left-primary shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Valor Total</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">R$ {{ valor_vendas_finalizadas|floatformat:2 }}</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="bi bi-currency-dollar fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-left-info shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Vendas do Mês</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ vendas_finalizadas_mes }}</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="bi bi-calendar-check fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <div class="card border-left-warning shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Faturamento do Mês</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">R$ {{ valor_vendas_finalizadas_mes|floatformat:2 }}</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="bi bi-graph-up fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <canvas id="graficoVendasMensal" height="100"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="row mb-4">
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-cash-stack"></i> Situação Contas a Pagar</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoPagar" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-cash"></i> Situação Contas a Receber</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="graficoReceber" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fluxo de Caixa Detalhado -->
     <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    Fluxo de Caixa
+        <div class="col-md-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-bar-chart-line"></i> Fluxo de Caixa Detalhado</h6>
                 </div>
                 <div class="card-body">
-                    <p><strong>Saldo atual:</strong> R$ {{ saldo|floatformat:2 }}</p>
-                    <p><strong>Total a pagar pendente:</strong> R$ {{ valor_pagar_pendente|floatformat:2 }}</p>
-                    <p><strong>Total pago:</strong> R$ {{ valor_pagar_pago|floatformat:2 }}</p>
-                    <p><strong>Total a receber pendente:</strong> R$ {{ valor_receber_pendente|floatformat:2 }}</p>
-                    <p><strong>Total recebido:</strong> R$ {{ valor_receber_recebido|floatformat:2 }}</p>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Descrição</th>
+                                    <th class="text-end">Valor (R$)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Seção de Entradas -->
+                                <tr class="table-secondary">
+                                    <td colspan="2" class="fw-bold"><i class="bi bi-arrow-down-circle me-2"></i> ENTRADAS</td>
+                                </tr>
+                                <tr class="table-success">
+                                    <td><i class="bi bi-plus-circle text-success me-2"></i> Total recebido (contas a receber)</td>
+                                    <td class="text-end fw-bold">{{ valor_receber_recebido|floatformat:2 }}</td>
+                                </tr>
+                                <tr class="table-success">
+                                    <td><i class="bi bi-cart-check text-success me-2"></i> Total de vendas finalizadas</td>
+                                    <td class="text-end fw-bold">{{ valor_vendas_finalizadas|floatformat:2 }}</td>
+                                </tr>
+                                <tr class="table-success fw-bold">
+                                    <td><i class="bi bi-cash-coin text-success me-2"></i> Total de entradas</td>
+                                    <td class="text-end">{{ valor_receber_recebido|add:valor_vendas_finalizadas|floatformat:2 }}</td>
+                                </tr>
+                                
+                                <!-- Seção de Saídas -->
+                                <tr class="table-secondary">
+                                    <td colspan="2" class="fw-bold"><i class="bi bi-arrow-up-circle me-2"></i> SAÍDAS</td>
+                                </tr>
+                                <tr class="table-danger">
+                                    <td><i class="bi bi-dash-circle text-danger me-2"></i> Total pago (contas a pagar)</td>
+                                    <td class="text-end fw-bold">{{ valor_pagar_pago|floatformat:2 }}</td>
+                                </tr>
+                                <tr class="table-danger fw-bold">
+                                    <td><i class="bi bi-cash-coin text-danger me-2"></i> Total de saídas</td>
+                                    <td class="text-end">{{ valor_pagar_pago|floatformat:2 }}</td>
+                                </tr>
+                                
+                                <!-- Seção de Saldos -->
+                                <tr class="table-secondary">
+                                    <td colspan="2" class="fw-bold"><i class="bi bi-calculator me-2"></i> SALDOS</td>
+                                </tr>
+                                {% with total_entradas=valor_receber_recebido|add:valor_vendas_finalizadas %}
+                                {% with saldo_atual=total_entradas|add:'-'|add:valor_pagar_pago %}
+                                <tr class="{% if saldo_atual >= 0 %}table-success{% else %}table-danger{% endif %}">
+                                    <td><i class="bi bi-calculator me-2"></i> Saldo atual</td>
+                                    <td class="text-end fw-bold">{{ saldo_atual|floatformat:2 }}</td>
+                                </tr>
+                                {% endwith %}
+                                {% endwith %}
+                                
+                                <!-- Seção de Previsões -->
+                                <tr class="table-secondary">
+                                    <td colspan="2" class="fw-bold"><i class="bi bi-graph-up me-2"></i> PREVISÕES</td>
+                                </tr>
+                                <tr class="table-warning">
+                                    <td><i class="bi bi-hourglass-split text-warning me-2"></i> Total a receber pendente</td>
+                                    <td class="text-end fw-bold">{{ valor_receber_pendente|floatformat:2 }}</td>
+                                </tr>
+                                <tr class="table-warning">
+                                    <td><i class="bi bi-hourglass-split text-warning me-2"></i> Total a pagar pendente</td>
+                                    <td class="text-end fw-bold">{{ valor_pagar_pendente|floatformat:2 }}</td>
+                                </tr>
+                                {% with total_entradas=valor_receber_recebido|add:valor_vendas_finalizadas %}
+                                {% with saldo_atual=total_entradas|add:'-'|add:valor_pagar_pago %}
+                                {% with saldo_previsto=saldo_atual|add:valor_receber_pendente|add:'-'|add:valor_pagar_pendente %}
+                                <tr class="{% if saldo_previsto >= 0 %}table-success{% else %}table-danger{% endif %}">
+                                    <td><i class="bi bi-calculator me-2"></i> Saldo previsto</td>
+                                    <td class="text-end fw-bold">{{ saldo_previsto|floatformat:2 }}</td>
+                                </tr>
+                                {% endwith %}
+                                {% endwith %}
+                                {% endwith %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    // Configuração dos gráficos
     const graficoPagar = document.getElementById('graficoPagar').getContext('2d');
     new Chart(graficoPagar, {
-        type: 'pie',
+        type: 'doughnut',
         data: {
             labels: JSON.parse(document.getElementById('labelsPagar').textContent),
             datasets: [{
                 data: JSON.parse(document.getElementById('dataPagar').textContent),
-                backgroundColor: ['#0d6efd', '#198754', '#dc3545'],
+                backgroundColor: ['#3b7ddd', '#3cbc8d', '#e74c3c'],
+                borderWidth: 1
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'bottom' }
-            }
+                legend: {
+                    position: 'bottom',
+                }
+            },
+            cutout: '60%'
         }
     });
+
     const graficoReceber = document.getElementById('graficoReceber').getContext('2d');
     new Chart(graficoReceber, {
-        type: 'pie',
+        type: 'doughnut',
         data: {
             labels: JSON.parse(document.getElementById('labelsReceber').textContent),
             datasets: [{
                 data: JSON.parse(document.getElementById('dataReceber').textContent),
-                backgroundColor: ['#ffc107', '#0dcaf0', '#dc3545'],
+                backgroundColor: ['#3b7ddd', '#3cbc8d', '#e74c3c'],
+                borderWidth: 1
             }]
         },
         options: {
             responsive: true,
+            maintainAspectRatio: false,
             plugins: {
-                legend: { position: 'bottom' }
+                legend: {
+                    position: 'bottom',
+                }
+            },
+            cutout: '60%'
+        }
+    });
+    
+    // Gráfico de vendas mensais
+    const graficoVendasMensal = document.getElementById('graficoVendasMensal').getContext('2d');
+    new Chart(graficoVendasMensal, {
+        type: 'bar',
+        data: {
+            labels: JSON.parse(document.getElementById('labelsVendasMensal').textContent),
+            datasets: [{
+                label: 'Faturamento Mensal (R$)',
+                data: JSON.parse(document.getElementById('dataVendasMensal').textContent),
+                backgroundColor: 'rgba(78, 115, 223, 0.7)',
+                borderColor: 'rgba(78, 115, 223, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'R$ ' + value.toLocaleString('pt-BR');
+                        }
+                    }
+                }
             }
         }
     });
 </script>
+
+<!-- Dados para os gráficos -->
 <script id="labelsPagar" type="application/json">{{ grafico_pagar.labels|safe }}</script>
 <script id="dataPagar" type="application/json">{{ grafico_pagar.data|safe }}</script>
 <script id="labelsReceber" type="application/json">{{ grafico_receber.labels|safe }}</script>
 <script id="dataReceber" type="application/json">{{ grafico_receber.data|safe }}</script>
+<script id="labelsVendasMensal" type="application/json">{{ grafico_vendas_mensal.labels|safe }}</script>
+<script id="dataVendasMensal" type="application/json">{{ grafico_vendas_mensal.data|safe }}</script>
 {% endblock %}

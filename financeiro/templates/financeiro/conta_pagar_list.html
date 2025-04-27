@@ -1,57 +1,328 @@
 {% extends "base.html" %}
 
-{% block title %}Contas a Pagar{% endblock %}
+{% block title %}Contas a Pagar - Coffee Filter Factory{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
-    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
-    <li class="breadcrumb-item"><a href="{% url 'financeiro:dashboard' %}">Financeiro</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Contas a Pagar</li>
+    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-house"></i> Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'financeiro:dashboard' %}" class="text-decoration-none"><i class="bi bi-currency-dollar"></i> Financeiro</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-cash-stack"></i> Contas a Pagar</li>
   </ol>
 </nav>
 {% endblock %}
 
 {% block content %}
 <div class="container-fluid">
+    <!-- Cabeçalho e botões de ação -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">Contas a Pagar</h2>
-        <a href="{% url 'financeiro:conta_pagar_create' %}" class="btn btn-success">
-            <i class="bi bi-plus-lg"></i> Nova Conta
-        </a>
+        <div>
+            <h2 class="fw-bold mb-0">Contas a Pagar</h2>
+            <p class="text-muted">Gerenciamento de obrigações financeiras</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'financeiro:conta_receber_list' %}" class="btn btn-outline-success">
+                <i class="bi bi-cash-coin"></i> Contas a Receber
+            </a>
+            <a href="{% url 'financeiro:conta_pagar_create' %}" class="btn btn-primary">
+                <i class="bi bi-plus-lg"></i> Nova Conta
+            </a>
+        </div>
     </div>
 
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Fornecedor</th>
-                    <th>Valor</th>
-                    <th>Vencimento</th>
-                    <th>Status</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for conta in object_list %}
-                <tr>
-                    <td>{{ conta.fornecedor }}</td>
-                    <td>R$ {{ conta.valor }}</td>
-                    <td>{{ conta.data_vencimento|date:"d/m/Y" }}</td>
-                    <td>{{ conta.get_status_display }}</td>
-                    <td>
-                        <a href="{% url 'financeiro:conta_pagar_update' conta.pk %}" class="btn btn-sm btn-info">Editar</a>
-<a href="{% url 'financeiro:conta_pagar_delete' conta.pk %}" class="btn btn-sm btn-danger ms-2">Excluir</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="5">Nenhuma conta a pagar cadastrada</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <!-- Cards de resumo -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total de Contas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ object_list|length }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-receipt fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-danger shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Total a Pagar</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">R$ {{ total_a_pagar|default:'0,00' }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-cash-stack fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Vencendo Hoje</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ contas_vencendo_hoje|default:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Contas Pagas (Mês)</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ contas_pagas_mes|default:0 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros e Tabela -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary">Lista de Contas a Pagar</h6>
+            <div class="d-flex gap-2">
+                <div class="input-group" style="width: 200px;">
+                    <select id="filtroStatus" class="form-select form-select-sm">
+                        <option value="">Todos os Status</option>
+                        <option value="PENDENTE">Pendente</option>
+                        <option value="PAGO">Pago</option>
+                        <option value="ATRASADO">Atrasado</option>
+                        <option value="CANCELADO">Cancelado</option>
+                    </select>
+                </div>
+                <div class="input-group" style="width: 200px;">
+                    <input type="text" id="filtroContas" class="form-control form-control-sm" placeholder="Buscar conta...">
+                    <button class="btn btn-outline-secondary btn-sm" type="button">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped" id="tabelaContas">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Fornecedor</th>
+                            <th>Descrição</th>
+                            <th>Valor</th>
+                            <th>Vencimento</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for conta in object_list %}
+                        <tr class="align-middle">
+                            <td>
+                                {% if conta.fornecedor %}
+                                <a href="{% url 'comercial:editar_fornecedor' conta.fornecedor.pk %}" class="text-decoration-none fw-bold">
+                                    {{ conta.fornecedor }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">Não informado</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ conta.descricao|default:"-" }}</td>
+                            <td class="fw-bold text-danger">R$ {{ conta.valor }}</td>
+                            <td>
+                                {% if conta.data_vencimento %}
+                                    {% if conta.status == 'ATRASADO' %}
+                                        <span class="text-danger">{{ conta.data_vencimento|date:"d/m/Y" }}</span>
+                                    {% elif conta.status == 'PENDENTE' and conta.vence_hoje %}
+                                        <span class="text-warning">{{ conta.data_vencimento|date:"d/m/Y" }} (Hoje)</span>
+                                    {% else %}
+                                        {{ conta.data_vencimento|date:"d/m/Y" }}
+                                    {% endif %}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if conta.status == 'PENDENTE' %}
+                                    <span class="badge bg-warning text-dark">{{ conta.get_status_display }}</span>
+                                {% elif conta.status == 'PAGO' %}
+                                    <span class="badge bg-success">{{ conta.get_status_display }}</span>
+                                {% elif conta.status == 'ATRASADO' %}
+                                    <span class="badge bg-danger">{{ conta.get_status_display }}</span>
+                                {% elif conta.status == 'CANCELADO' %}
+                                    <span class="badge bg-secondary">{{ conta.get_status_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ conta.get_status_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#pagarModal{{ conta.pk }}" title="Registrar Pagamento">
+                                        <i class="bi bi-check-circle"></i>
+                                    </button>
+                                    <a href="{% url 'financeiro:conta_pagar_update' conta.pk %}" class="btn btn-sm btn-primary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'financeiro:conta_pagar_delete' conta.pk %}" class="btn btn-sm btn-danger" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="alert alert-info mb-0">
+                                    <i class="bi bi-info-circle"></i> Nenhuma conta a pagar cadastrada.
+                                    <a href="{% url 'financeiro:conta_pagar_create' %}" class="alert-link">Cadastrar nova conta</a>.
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação (para implementação futura) -->
+            {% if object_list.has_other_pages %}
+            <nav aria-label="Paginação de contas" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if object_list.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ object_list.previous_page_number }}" aria-label="Anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Anterior">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for i in object_list.paginator.page_range %}
+                        {% if object_list.number == i %}
+                            <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                        {% else %}
+                            <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if object_list.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ object_list.next_page_number }}" aria-label="Próximo">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#" aria-label="Próximo">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<!-- Modais para registrar pagamento -->
+{% for conta in object_list %}
+<div class="modal fade" id="pagarModal{{ conta.pk }}" tabindex="-1" aria-labelledby="pagarModalLabel{{ conta.pk }}" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pagarModalLabel{{ conta.pk }}">Registrar Pagamento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form method="post" action="{% url 'financeiro:conta_pagar_pagar' conta.pk %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Conta</label>
+                        <input type="text" class="form-control" value="{{ conta.descricao|default:'Sem descrição' }} - R$ {{ conta.valor }}" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="data_pagamento{{ conta.pk }}" class="form-label">Data de Pagamento</label>
+                        <input type="date" class="form-control" id="data_pagamento{{ conta.pk }}" name="data_pagamento" value="{% now 'Y-m-d' %}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="valor_pago{{ conta.pk }}" class="form-label">Valor Pago</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input type="number" step="0.01" class="form-control" id="valor_pago{{ conta.pk }}" name="valor_pago" value="{{ conta.valor }}" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="observacao{{ conta.pk }}" class="form-label">Observação (opcional)</label>
+                        <textarea class="form-control" id="observacao{{ conta.pk }}" name="observacao" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Confirmar Pagamento</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Script para filtro de tabela -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const inputFiltro = document.getElementById('filtroContas');
+        const selectStatus = document.getElementById('filtroStatus');
+        const tabela = document.getElementById('tabelaContas');
+        
+        function filtrarTabela() {
+            const termo = inputFiltro.value.toLowerCase();
+            const status = selectStatus.value.toLowerCase();
+            const linhas = tabela.querySelectorAll('tbody tr');
+            
+            linhas.forEach(linha => {
+                const texto = linha.textContent.toLowerCase();
+                const statusCelula = linha.querySelector('td:nth-child(5)');
+                const statusValor = statusCelula ? statusCelula.textContent.trim().toLowerCase() : '';
+                
+                const matchTermo = texto.indexOf(termo) > -1;
+                const matchStatus = status === '' || statusValor.includes(status);
+                
+                if (matchTermo && matchStatus) {
+                    linha.style.display = '';
+                } else {
+                    linha.style.display = 'none';
+                }
+            });
+        }
+        
+        if (inputFiltro) {
+            inputFiltro.addEventListener('keyup', filtrarTabela);
+        }
+        
+        if (selectStatus) {
+            selectStatus.addEventListener('change', filtrarTabela);
+        }
+    });
+</script>
 {% endblock %}

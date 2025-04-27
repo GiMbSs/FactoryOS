@@ -1,59 +1,222 @@
 {% extends "base.html" %}
+{% load i18n %}
+
 {% block title %}Matérias-Primas{% endblock %}
+
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
-    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Produção</li>
-    <li class="breadcrumb-item active" aria-current="page">Matérias-Primas</li>
+    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-house"></i> Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'producao:dashboard' %}" class="text-decoration-none"><i class="bi bi-gear"></i> Produção</a></li>
+    <li class="breadcrumb-item active" aria-current="page"><i class="bi bi-boxes"></i> Matérias-Primas</li>
   </ol>
 </nav>
 {% endblock %}
+
 {% block content %}
 <div class="container-fluid">
+    <!-- Cabeçalho e botões de ação -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold">Matérias-Primas</h2>
-        <a href="{% url 'producao:materiaprima_create' %}" class="btn btn-success">
-            <i class="bi bi-plus-lg"></i> Nova Matéria-Prima
-        </a>
+        <div>
+            <h2 class="fw-bold mb-0">Matérias-Primas</h2>
+            <p class="text-muted">Gerenciamento de matérias-primas para produção</p>
+        </div>
+        <div>
+            <a href="{% url 'producao:materiaprima_create' %}" class="btn btn-success">
+                <i class="bi bi-plus-lg"></i> Nova Matéria-Prima
+            </a>
+        </div>
     </div>
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Nome</th>
-                    <th>Tipo</th>
-                    <th>Unidade</th>
-                    <th>Custo Unitário</th>
-                    <th>Estoque Mínimo</th>
-                    <th>Ativo</th>
-                    <th>Ações</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for materia in materias_primas %}
-                <tr>
-                    <td>{{ materia.nome }}</td>
-                    <td>{{ materia.get_tipo_display }}</td>
-                    <td>{{ materia.get_unidade_medida_display }}</td>
-                    <td>R$ {{ materia.custo_unitario }}</td>
-                    <td>{{ materia.estoque_minimo }}</td>
-                    <td>
-                        <span class="badge bg-{% if materia.ativo %}success{% else %}danger{% endif %}">
-                            {% if materia.ativo %}Ativo{% else %}Inativo{% endif %}
-                        </span>
-                    </td>
-                    <td>
-                        <a href="#" class="btn btn-sm btn-info">Editar</a>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="7">Nenhuma matéria-prima cadastrada</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+    <!-- Estatísticas -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total de Matérias-Primas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_materias }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-boxes fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Matérias-Primas Ativas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ materias_ativas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-check-circle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Custo Total</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">R$ {{ custo_total|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-currency-dollar fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Abaixo do Estoque Mínimo</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ materias_abaixo_minimo }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros e Tabela -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-boxes"></i> Lista de Matérias-Primas</h6>
+            <div class="d-flex gap-2">
+                <div class="input-group" style="width: 250px;">
+                    <select id="filtroTipo" class="form-select form-select-sm">
+                        <option value="">Todos os Tipos</option>
+                        <option value="MADEIRA_BRUTA">Madeira Bruta</option>
+                        <option value="VARETA_MADEIRA">Vareta de Madeira</option>
+                        <option value="TECIDO_MALHA">Tecido Malha</option>
+                        <option value="TECIDO_PANO_CRU">Tecido Pano Cru</option>
+                        <option value="CABO_PLASTICO">Cabo Plástico</option>
+                    </select>
+                </div>
+                <div class="input-group" style="width: 250px;">
+                    <input type="text" id="filtroMaterias" class="form-control form-control-sm" placeholder="Buscar matéria-prima...">
+                    <button class="btn btn-outline-secondary btn-sm" type="button">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-striped" id="tabelaMaterias">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Nome</th>
+                            <th>Tipo</th>
+                            <th>Unidade</th>
+                            <th>Custo Unitário</th>
+                            <th>Estoque Mínimo</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for materia in materias_primas %}
+                        <tr>
+                            <td>
+                                <span class="fw-bold">{{ materia.nome }}</span>
+                                {% if materia.descricao %}
+                                <div class="small text-muted">{{ materia.descricao|truncatechars:50 }}</div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if 'MADEIRA' in materia.tipo %}
+                                    <span class="badge bg-success">{{ materia.get_tipo_display }}</span>
+                                {% elif 'TECIDO' in materia.tipo %}
+                                    <span class="badge bg-primary">{{ materia.get_tipo_display }}</span>
+                                {% elif 'CABO' in materia.tipo %}
+                                    <span class="badge bg-info">{{ materia.get_tipo_display }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ materia.get_tipo_display }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ materia.get_unidade_medida_display }}</td>
+                            <td>R$ {{ materia.custo_unitario|floatformat:2 }}</td>
+                            <td>{{ materia.estoque_minimo }}</td>
+                            <td>
+                                <span class="badge bg-{% if materia.ativo %}success{% else %}danger{% endif %}">
+                                    {% if materia.ativo %}Ativo{% else %}Inativo{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="#" class="btn btn-sm btn-info" title="Detalhes">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{% url 'producao:materiaprima_update' materia.pk %}" class="btn btn-sm btn-primary" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a href="{% url 'producao:materiaprima_delete' materia.pk %}" class="btn btn-sm btn-danger" title="Excluir">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4 text-muted">
+                                <i class="bi bi-boxes mb-3" style="font-size: 2rem;"></i>
+                                <p class="mb-0">Nenhuma matéria-prima cadastrada.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Filtro por tipo
+        const filtroTipo = document.getElementById('filtroTipo');
+        const filtroMaterias = document.getElementById('filtroMaterias');
+        const tabela = document.getElementById('tabelaMaterias');
+        const linhas = tabela.querySelectorAll('tbody tr');
+
+        function filtrarTabela() {
+            const textoFiltro = filtroMaterias.value.toLowerCase();
+            const tipoFiltro = filtroTipo.value;
+
+            linhas.forEach(linha => {
+                const nome = linha.cells[0].textContent.toLowerCase();
+                const tipoTexto = linha.cells[1].textContent.trim().toLowerCase();
+                const tipoMatch = !tipoFiltro || 
+                                 tipoTexto.includes(tipoFiltro.toLowerCase()) || 
+                                 linha.cells[1].querySelector('.badge')?.classList.contains(`bg-${tipoFiltro.toLowerCase()}`);
+                const textoMatch = !textoFiltro || 
+                                  nome.includes(textoFiltro) || 
+                                  linha.cells[2].textContent.toLowerCase().includes(textoFiltro);
+                
+                linha.style.display = (tipoMatch && textoMatch) ? '' : 'none';
+            });
+        }
+
+        filtroTipo.addEventListener('change', filtrarTabela);
+        filtroMaterias.addEventListener('input', filtrarTabela);
+    });
+</script>
 {% endblock %}

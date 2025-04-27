@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
 
-{% block title %}Cadastro de Cliente{% endblock %}
+{% block title %}{% if form.instance.pk %}Editar Cliente: {{ form.instance.nome }}{% else %}Novo Cliente{% endif %}{% endblock %}
 
 {% block extra_head %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
@@ -19,7 +19,11 @@ function updateMask(select) {
 }
 
 $(document).ready(function() {
-    $('#id_cnpj_cpf').mask($('#id_cnpj_cpf').attr('data-mask'));
+    // Aplicar máscara inicial baseada no tipo selecionado
+    updateMask(document.getElementById('id_tipo'));
+    
+    // Aplicar máscara de telefone
+    $('#id_telefone').mask('(00) 00000-0000');
 });
 </script>
 {% endblock %}
@@ -27,62 +31,221 @@ $(document).ready(function() {
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
   <ol class="breadcrumb bg-white px-2 py-2 mb-4 rounded-3 shadow-sm">
-    <li class="breadcrumb-item"><a href="{% url 'index' %}">Dashboard</a></li>
-    <li class="breadcrumb-item"><a href="{% url 'comercial:lista_clientes' %}">Clientes</a></li>
-    <li class="breadcrumb-item active" aria-current="page">Cadastro</li>
+    <li class="breadcrumb-item"><a href="{% url 'index' %}" class="text-decoration-none"><i class="bi bi-house"></i> Dashboard</a></li>
+    <li class="breadcrumb-item"><a href="{% url 'comercial:lista_clientes' %}" class="text-decoration-none"><i class="bi bi-people"></i> Clientes</a></li>
+    <li class="breadcrumb-item active" aria-current="page">{% if form.instance.pk %}Editar Cliente{% else %}Novo Cliente{% endif %}</li>
   </ol>
 </nav>
 {% endblock %}
+
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-lg-7 col-md-9">
-        <div class="card shadow-sm border-0">
-            <div class="card-body">
-                <h2 class="mb-4 fw-bold text-primary">Cadastro de Cliente</h2>
-                {% if messages %}
-    {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="container-fluid">
+    <!-- Cabeçalho e botões de ação -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">{% if form.instance.pk %}Editar Cliente: {{ form.instance.nome }}{% else %}Novo Cliente{% endif %}</h2>
+            <p class="text-muted">{% if form.instance.pk %}Atualizar informações do cliente{% else %}Cadastrar novo cliente no sistema{% endif %}</p>
         </div>
-    {% endfor %}
-{% endif %}
-<form method="post" autocomplete="off">
-            {% csrf_token %}
-            
-            <div class="mb-3">
-                <label for="nome" class="form-label">Nome</label>
-                {% render_field form.nome class="form-control" %}
+        <div>
+            <a href="{% url 'comercial:lista_clientes' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar para Lista
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="row mb-4">
+        <div class="col-12">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="bi bi-info-circle me-2"></i> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-person-vcard"></i> Informações do Cliente</h6>
+                </div>
+                <div class="card-body">
+                    <form method="post" autocomplete="off" id="clienteForm">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="id_nome" class="form-label fw-bold">Nome <span class="text-danger">*</span></label>
+                                {% render_field form.nome class="form-control" placeholder="Nome completo ou razão social" %}
+                                {% if form.nome.errors %}
+                                <div class="invalid-feedback d-block">{{ form.nome.errors }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="id_tipo" class="form-label fw-bold">Tipo <span class="text-danger">*</span></label>
+                                {% render_field form.tipo class="form-select" onchange="updateMask(this)" %}
+                                {% if form.tipo.errors %}
+                                <div class="invalid-feedback d-block">{{ form.tipo.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="id_cnpj_cpf" class="form-label fw-bold">CNPJ/CPF <span class="text-danger">*</span></label>
+                                {% render_field form.cnpj_cpf class="form-control" data-mask="00.000.000/0000-00" placeholder="00.000.000/0000-00" %}
+                                {% if form.cnpj_cpf.errors %}
+                                <div class="invalid-feedback d-block">{{ form.cnpj_cpf.errors }}</div>
+                                {% endif %}
+                                <div class="form-text text-muted">Será formatado automaticamente conforme o tipo selecionado</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="id_telefone" class="form-label fw-bold">Telefone <span class="text-danger">*</span></label>
+                                {% render_field form.telefone class="form-control" placeholder="(00) 00000-0000" %}
+                                {% if form.telefone.errors %}
+                                <div class="invalid-feedback d-block">{{ form.telefone.errors }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_email" class="form-label fw-bold">Email <span class="text-danger">*</span></label>
+                            {% render_field form.email class="form-control" type="email" placeholder="email@exemplo.com" %}
+                            {% if form.email.errors %}
+                            <div class="invalid-feedback d-block">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="id_endereco" class="form-label fw-bold">Endereço</label>
+                            {% render_field form.endereco class="form-control" rows="3" placeholder="Endereço completo" %}
+                            {% if form.endereco.errors %}
+                            <div class="invalid-feedback d-block">{{ form.endereco.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'comercial:lista_clientes' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> {% if form.instance.pk %}Atualizar{% else %}Salvar{% endif %} Cliente
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
             
-            <div class="mb-3">
-                <label for="tipo" class="form-label">Tipo</label>
-                {% render_field form.tipo class="form-select" %}
+            {% if form.instance.pk %}
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-cart"></i> Pedidos do Cliente</h6>
+                    <a href="{% url 'comercial:pedido_create' %}?cliente={{ form.instance.pk }}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-plus-circle"></i> Novo Pedido
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Data</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for pedido in form.instance.venda_set.all %}
+                                <tr>
+                                    <td>#{{ pedido.id }}</td>
+                                    <td>{{ pedido.data_venda|date:"d/m/Y H:i" }}</td>
+                                    <td class="fw-bold text-success">R$ {{ pedido.valor_total }}</td>
+                                    <td>
+                                        {% if pedido.status == 'ABERTA' %}
+                                        <span class="badge bg-warning text-dark">{{ pedido.get_status_display }}</span>
+                                        {% elif pedido.status == 'FECHADA' %}
+                                        <span class="badge bg-success">{{ pedido.get_status_display }}</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ pedido.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'comercial:pedido_edit' pedido.pk %}" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-3 text-muted">Nenhum pedido encontrado para este cliente.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-4 col-md-10">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-info-circle"></i> Informações Adicionais</h6>
+                </div>
+                <div class="card-body">
+                    {% if form.instance.pk %}
+                    <div class="mb-3">
+                        <p class="mb-1 fw-bold">Data de Cadastro:</p>
+                        <p>{{ form.instance.data_cadastro|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div class="mb-3">
+                        <p class="mb-1 fw-bold">Status:</p>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="statusSwitch" {% if form.instance.ativo %}checked{% endif %} disabled>
+                            <label class="form-check-label" for="statusSwitch">
+                                {% if form.instance.ativo %}
+                                <span class="text-success">Ativo</span>
+                                {% else %}
+                                <span class="text-danger">Inativo</span>
+                                {% endif %}
+                            </label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <p class="mb-1 fw-bold">Total de Pedidos:</p>
+                        <p>{{ form.instance.venda_set.count }}</p>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info mb-0">
+                        <i class="bi bi-info-circle me-2"></i> Preencha o formulário ao lado para cadastrar um novo cliente no sistema.
+                    </div>
+                    {% endif %}
+                </div>
             </div>
             
-            <div class="mb-3">
-                <label for="cnpj_cpf" class="form-label">CNPJ/CPF</label>
-                {% render_field form.cnpj_cpf class="form-control" %}
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white py-3">
+                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-question-circle"></i> Ajuda</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <p class="mb-1 fw-bold">Tipo de Cliente:</p>
+                        <p class="mb-0"><span class="badge bg-primary">PJ</span> - Pessoa Jurídica (Empresas)</p>
+                        <p class="mb-0"><span class="badge bg-info">PF</span> - Pessoa Física (Indivíduos)</p>
+                    </div>
+                    <div class="mb-3">
+                        <p class="mb-1 fw-bold">Campos Obrigatórios:</p>
+                        <p>Os campos marcados com <span class="text-danger">*</span> são de preenchimento obrigatório.</p>
+                    </div>
+                </div>
             </div>
-            
-            <div class="mb-3">
-                <label for="telefone" class="form-label">Telefone</label>
-                {% render_field form.telefone class="form-control" %}
-            </div>
-            
-            <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                {% render_field form.email class="form-control" type="email" %}
-            </div>
-            
-            <div class="mb-3">
-                <label for="endereco" class="form-label">Endereço</label>
-                {% render_field form.endereco class="form-control" %}
-            </div>
-            
-            <button type="submit" class="btn btn-primary">Salvar</button>
-            <a href="{% url 'comercial:lista_clientes' %}" class="btn btn-secondary">Cancelar</a>
-        </form>
+        </div>
     </div>
 </div>
 {% endblock %}
