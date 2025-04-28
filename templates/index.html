@@ -247,45 +247,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Últimas Atividades -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Últimas Atividades</h6>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-sm">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Data/Hora</th>
-                                    <th>Usuário</th>
-                                    <th>Módulo</th>
-                                    <th>Ação</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for log in ultimos_logs|slice:":10" %}
-                                <tr>
-                                    <td>{{ log.data_hora|date:"d/m/Y H:i" }}</td>
-                                    <td>{{ log.usuario }}</td>
-                                    <td>{{ log.modulo }}</td>
-                                    <td>{{ log.acao }}</td>
-                                </tr>
-                                {% empty %}
-                                <tr>
-                                    <td colspan="4" class="text-center">Nenhuma atividade registrada</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Scripts para os gráficos -->

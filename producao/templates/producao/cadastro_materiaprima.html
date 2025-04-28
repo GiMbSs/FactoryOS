@@ -72,12 +72,21 @@ $(document).ready(function() {
                                 {% endif %}
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label for="id_tipo" class="form-label fw-bold">Tipo <span class="text-danger">*</span></label>
-                                {% render_field form.tipo class="form-select" %}
-                                {% if form.tipo.errors %}
-                                <div class="invalid-feedback d-block">{{ form.tipo.errors }}</div>
+                                <label for="id_tipo_materia_prima" class="form-label fw-bold">Tipo <span class="text-danger">*</span></label>
+                                {% render_field form.tipo_materia_prima class="form-select" %}
+                                {% if form.tipo_materia_prima.errors %}
+                                <div class="invalid-feedback d-block">{{ form.tipo_materia_prima.errors }}</div>
+                                {% endif %}
+                                {% if form.tipo_materia_prima.help_text %}
+                                <div class="form-text">{{ form.tipo_materia_prima.help_text }}</div>
                                 {% endif %}
                             </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <a href="#" class="btn btn-sm btn-outline-primary" id="btnNovoTipoMateriaPrima">
+                                <i class="bi bi-plus-circle"></i> Cadastrar novo tipo
+                            </a>
                         </div>
                         
                         <div class="mb-3">
@@ -164,4 +173,106 @@ $(document).ready(function() {
         </div>
     </div>
 </div>
+
+<!-- Modal para cadastro de tipos de matéria-prima -->
+<div class="modal fade" id="tipoMateriaPrimaModal" tabindex="-1" aria-labelledby="tipoMateriaPrimaModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tipoMateriaPrimaModalLabel">Novo Tipo de Matéria-Prima</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div id="tipoMateriaPrimaModalContent">
+                <!-- O conteúdo do modal será carregado aqui via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Inicializando o formulário de matéria-prima...');
+
+    // Script para o modal de tipo de matéria-prima
+    const btnNovoTipo = document.getElementById('btnNovoTipoMateriaPrima');
+    const modal = document.getElementById('tipoMateriaPrimaModal');
+    const modalContent = document.getElementById('tipoMateriaPrimaModalContent');
+    const tipoMateriaPrimaSelect = document.getElementById('id_tipo_materia_prima');
+    
+    if (btnNovoTipo && modal && modalContent) {
+        console.log('Elementos do modal encontrados. Configurando event listener...');
+        
+        // Bootstrap Modal
+        const tipoMateriaPrimaModalObj = new bootstrap.Modal(modal);
+        
+        btnNovoTipo.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Botão "Cadastrar novo tipo" clicado');
+            
+            // Carrega o modal via AJAX
+            fetch('{% url "producao:tipo_materia_prima_modal" %}')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Modal carregado com sucesso:', data);
+                    document.getElementById('tipoMateriaPrimaModalLabel').textContent = data.title;
+                    modalContent.innerHTML = data.html;
+                    tipoMateriaPrimaModalObj.show();
+                    
+                    // Configura o form dentro do modal para envio via AJAX
+                    const form = document.getElementById('tipoMateriaPrimaForm');
+                    if (form) {
+                        form.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            console.log('Formulário do modal submetido');
+                            
+                            const formData = new FormData(form);
+                            fetch('{% url "producao:tipo_materia_prima_modal" %}', {
+                                method: 'POST',
+                                body: formData,
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    console.log('Tipo de matéria-prima salvo com sucesso:', data);
+                                    // Adiciona o novo tipo ao select
+                                    const option = document.createElement('option');
+                                    option.value = data.id;
+                                    option.textContent = data.nome;
+                                    option.selected = true;
+                                    tipoMateriaPrimaSelect.appendChild(option);
+                                    
+                                    // Fecha o modal e mostra mensagem de sucesso
+                                    tipoMateriaPrimaModalObj.hide();
+                                    alert(data.message);
+                                } else {
+                                    // Exibe erros
+                                    console.error('Erro ao salvar tipo de matéria-prima:', data.errors);
+                                    alert('Erro ao salvar tipo de matéria-prima. Verifique os campos.');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Erro na requisição:', error);
+                                alert('Erro ao processar a requisição. Tente novamente.');
+                            });
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar modal:', error);
+                    alert('Não foi possível carregar o formulário de tipo de matéria-prima. Tente novamente.');
+                });
+        });
+    } else {
+        console.error('Elementos necessários para o modal não foram encontrados:', {
+            btnNovoTipo: !!btnNovoTipo,
+            modal: !!modal,
+            modalContent: !!modalContent,
+            tipoMateriaPrimaSelect: !!tipoMateriaPrimaSelect
+        });
+    }
+});
+</script>
 {% endblock %}

@@ -16,7 +16,7 @@ class ContaPagar(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDENTE')
     data_pagamento = models.DateField(null=True, blank=True)
     observacoes = models.TextField(blank=True)
-
+    
     class Meta:
         verbose_name = 'Conta a Pagar'
         verbose_name_plural = 'Contas a Pagar'
@@ -24,6 +24,18 @@ class ContaPagar(models.Model):
 
     def __str__(self):
         return f"{self.fornecedor} - R${self.valor}"
+    
+    @property
+    def vence_hoje(self):
+        """Verifica se a conta vence hoje."""
+        from django.utils import timezone
+        return self.data_vencimento == timezone.now().date()
+    
+    @property
+    def esta_atrasada(self):
+        """Verifica se a conta está atrasada."""
+        from django.utils import timezone
+        return self.status == 'PENDENTE' and self.data_vencimento < timezone.now().date()
 
 class ContaReceber(models.Model):
     STATUS_CHOICES = [
@@ -38,7 +50,7 @@ class ContaReceber(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDENTE')
     data_recebimento = models.DateField(null=True, blank=True)
     observacoes = models.TextField(blank=True)
-
+    
     class Meta:
         verbose_name = 'Conta a Receber'
         verbose_name_plural = 'Contas a Receber'
@@ -46,6 +58,18 @@ class ContaReceber(models.Model):
 
     def __str__(self):
         return f"{self.cliente} - R${self.valor}"
+        
+    @property
+    def vence_hoje(self):
+        """Verifica se a conta vence hoje."""
+        from django.utils import timezone
+        return self.data_vencimento == timezone.now().date()
+    
+    @property
+    def esta_atrasada(self):
+        """Verifica se a conta está atrasada."""
+        from django.utils import timezone
+        return self.status == 'PENDENTE' and self.data_vencimento < timezone.now().date()
 
 class Transacao(models.Model):
     TIPO_CHOICES = [

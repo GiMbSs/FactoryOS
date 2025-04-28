@@ -17,24 +17,42 @@ class ContaPagarListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from django.utils import timezone
-        from django.db.models import Sum
+        from django.db.models import Sum, Q
+        import datetime
+        
+        # Obter a data atual usando timezone aware para evitar problemas de fuso horário
+        timezone_now = timezone.localtime(timezone.now())
+        hoje = timezone_now.date()  # Data local no fuso horário configurado
+        mes_atual = hoje.month
+        ano_atual = hoje.year
+        
+        # Adicionar a data ao contexto para uso no template
+        context['hoje'] = hoje
+        context['mes_atual'] = mes_atual
+        context['ano_atual'] = ano_atual
         
         # Calcular total a pagar (contas pendentes)
-        context['total_a_pagar'] = ContaPagar.objects.filter(status='PENDENTE').aggregate(total=Sum('valor'))['total'] or 0
-        
-        # Contar contas vencendo hoje
-        hoje = timezone.now().date()
-        context['contas_vencendo_hoje'] = ContaPagar.objects.filter(
-            data_vencimento=hoje,
+        total_a_pagar = ContaPagar.objects.filter(
             status='PENDENTE'
-        ).count()
+        ).aggregate(
+            total=Sum('valor')
+        )['total'] or 0
+        context['total_a_pagar'] = total_a_pagar
+        
+        # Contas vencendo hoje
+        contas_vencendo_hoje = ContaPagar.objects.filter(
+            Q(status='PENDENTE'),
+            Q(data_vencimento=hoje)
+        )
+        context['contas_vencendo_hoje'] = contas_vencendo_hoje.count()
         
         # Contar contas pagas no mês atual
-        context['contas_pagas_mes'] = ContaPagar.objects.filter(
-            data_pagamento__month=timezone.now().month,
-            data_pagamento__year=timezone.now().year,
-            status='PAGO'
-        ).count()
+        contas_pagas = ContaPagar.objects.filter(
+            Q(status='PAGO'),
+            Q(data_pagamento__month=mes_atual),
+            Q(data_pagamento__year=ano_atual)
+        )
+        context['contas_pagas_mes'] = contas_pagas.count()
         
         return context
 
@@ -67,24 +85,42 @@ class ContaReceberListView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         from django.utils import timezone
-        from django.db.models import Sum
+        from django.db.models import Sum, Q
+        import datetime
+        
+        # Obter a data atual usando timezone aware para evitar problemas de fuso horário
+        timezone_now = timezone.localtime(timezone.now())
+        hoje = timezone_now.date()  # Data local no fuso horário configurado
+        mes_atual = hoje.month
+        ano_atual = hoje.year
+        
+        # Adicionar a data ao contexto para uso no template
+        context['hoje'] = hoje
+        context['mes_atual'] = mes_atual
+        context['ano_atual'] = ano_atual
         
         # Calcular total a receber (contas pendentes)
-        context['total_a_receber'] = ContaReceber.objects.filter(status='PENDENTE').aggregate(total=Sum('valor'))['total'] or 0
-        
-        # Contar contas vencendo hoje
-        hoje = timezone.now().date()
-        context['contas_vencendo_hoje'] = ContaReceber.objects.filter(
-            data_vencimento=hoje,
+        total_a_receber = ContaReceber.objects.filter(
             status='PENDENTE'
-        ).count()
+        ).aggregate(
+            total=Sum('valor')
+        )['total'] or 0
+        context['total_a_receber'] = total_a_receber
+        
+        # Contas vencendo hoje
+        contas_vencendo_hoje = ContaReceber.objects.filter(
+            Q(status='PENDENTE'),
+            Q(data_vencimento=hoje)
+        )
+        context['contas_vencendo_hoje'] = contas_vencendo_hoje.count()
         
         # Contar contas recebidas no mês atual
-        context['contas_recebidas_mes'] = ContaReceber.objects.filter(
-            data_recebimento__month=timezone.now().month,
-            data_recebimento__year=timezone.now().year,
-            status='RECEBIDO'
-        ).count()
+        contas_recebidas = ContaReceber.objects.filter(
+            Q(status='RECEBIDO'),
+            Q(data_recebimento__month=mes_atual),
+            Q(data_recebimento__year=ano_atual)
+        )
+        context['contas_recebidas_mes'] = contas_recebidas.count()
         
         return context
 
@@ -138,6 +174,15 @@ class DashboardView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        from django.utils import timezone
+        import datetime
+        
+        # Obter a data atual usando timezone aware para evitar problemas de fuso horário
+        timezone_now = timezone.localtime(timezone.now())
+        hoje = timezone_now.date()
+        mes_atual = hoje.month
+        ano_atual = hoje.year
+        
         # Dados para cards
         context['contas_pagar_pendentes'] = ContaPagar.objects.filter(status='PENDENTE').count()
         context['contas_pagar_pagas'] = ContaPagar.objects.filter(status='PAGO').count()
@@ -150,8 +195,6 @@ class DashboardView(ListView):
         
         # Dados de vendas finalizadas
         from comercial.models import Venda
-        from django.utils import timezone
-        import datetime
         
         # Total de vendas finalizadas
         context['vendas_finalizadas'] = Venda.objects.filter(status='FECHADA').count()
@@ -165,8 +208,6 @@ class DashboardView(ListView):
         context['saldo'] = total_entradas - total_saidas
         
         # Vendas finalizadas no mês atual
-        mes_atual = timezone.now().month
-        ano_atual = timezone.now().year
         context['vendas_finalizadas_mes'] = Venda.objects.filter(
             status='FECHADA',
             data_venda__month=mes_atual,
@@ -201,8 +242,6 @@ class DashboardView(ListView):
         # Gráfico de vendas por mês (últimos 6 meses)
         meses = []
         dados_vendas = []
-        mes_atual = timezone.now().month
-        ano_atual = timezone.now().year
         
         for i in range(5, -1, -1):
             # Calcula o mês e ano para cada um dos últimos 6 meses
@@ -251,14 +290,14 @@ class RegistrarPagamentoView(View):
         # Atualiza os dados da conta
         conta.status = 'PAGO'
         conta.data_pagamento = data_pagamento
-        conta.valor_pago = valor_pago
+        # Não usamos valor_pago para evitar erro caso o campo não exista
         
         if observacao:
             conta.observacoes = (conta.observacoes or '') + f"\nPagamento em {data_pagamento}: {observacao}"
         
         conta.save()
         
-        registrar_log(request, 'Financeiro', f'Registrou pagamento da conta: {conta.descricao} - R${valor_pago}')
+        registrar_log(request, 'Financeiro', f'Registrou pagamento da conta: {conta.fornecedor} - R${valor_pago}')
         messages.success(request, 'Pagamento registrado com sucesso!')
         return redirect('financeiro:conta_pagar_list')
 
@@ -281,14 +320,15 @@ class RegistrarRecebimentoView(View):
         # Atualiza os dados da conta
         conta.status = 'RECEBIDO'
         conta.data_recebimento = data_recebimento
-        conta.valor_recebido = valor_recebido
-        conta.forma_pagamento = forma_pagamento
+        # Removemos referências a campos que podem não existir
+        # conta.valor_recebido = valor_recebido
+        # conta.forma_pagamento = forma_pagamento
         
         if observacao:
             conta.observacoes = (conta.observacoes or '') + f"\nRecebimento em {data_recebimento}: {observacao}"
         
         conta.save()
         
-        registrar_log(request, 'Financeiro', f'Registrou recebimento da conta: {conta.descricao} - R${valor_recebido}')
+        registrar_log(request, 'Financeiro', f'Registrou recebimento da conta: {conta.cliente} - R${valor_recebido}')
         messages.success(request, 'Recebimento registrado com sucesso!')
         return redirect('financeiro:conta_receber_list')

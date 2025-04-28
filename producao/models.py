@@ -40,6 +40,22 @@ class UnidadeMedida(models.Model):
         return f"{self.sigla} - {self.nome}"
 
 
+class TipoMateriaPrima(models.Model):
+    nome = models.CharField('Nome', max_length=50)
+    descricao = models.TextField('Descrição', blank=True)
+    icone = models.CharField('Ícone', max_length=50, default='bi-box', blank=True, help_text='Nome do ícone Bootstrap, ex: bi-box')
+    cor = models.CharField('Cor', max_length=20, default='primary', blank=True, help_text='Nome da cor Bootstrap: primary, success, etc')
+    ativo = models.BooleanField('Ativo', default=True)
+    
+    class Meta:
+        verbose_name = 'Tipo de Matéria Prima'
+        verbose_name_plural = 'Tipos de Matéria Prima'
+        ordering = ['nome']
+    
+    def __str__(self):
+        return self.nome
+
+
 class MateriaPrima(models.Model):
     # Mantemos os TIPO_CHOICES para compatibilidade com código existente
     TIPO_CHOICES = [
@@ -59,8 +75,19 @@ class MateriaPrima(models.Model):
 
     nome = models.CharField('Nome', max_length=100)
     descricao = models.TextField('Descrição', blank=True)
-    # Mantemos o campo tipo para compatibilidade, mas adicionamos categoria
-    tipo = models.CharField('Tipo', max_length=20, choices=TIPO_CHOICES)
+    
+    # Mantemos o campo tipo para compatibilidade, mas adicionamos tipo_materia_prima
+    tipo = models.CharField('Tipo (Legado)', max_length=20, choices=TIPO_CHOICES, blank=True, null=True)
+    
+    # Novo campo para o tipo de matéria prima
+    tipo_materia_prima = models.ForeignKey(
+        TipoMateriaPrima,
+        on_delete=models.PROTECT,
+        verbose_name='Tipo de Matéria Prima',
+        null=True,
+        blank=True
+    )
+    
     categoria = models.ForeignKey(
         Categoria, 
         on_delete=models.SET_NULL, 
@@ -108,13 +135,58 @@ class MateriaPrima(models.Model):
         ordering = ['nome']
 
     def __str__(self):
-        return f"{self.nome} ({self.get_tipo_display()})"
+        tipo_display = self.tipo_materia_prima.nome if self.tipo_materia_prima else self.get_tipo_display()
+        return f"{self.nome} ({tipo_display})"
+
+    @staticmethod
+    def migrar_tipos_existentes():
+        """
+        Migra os tipos antigos para os novos tipos de matéria-prima.
+        Deve ser executado após a criação do modelo TipoMateriaPrima.
+        """
+        from django.db import transaction
+        
+        # Mapeamento dos tipos antigos para novos
+        mapeamento_tipos = {
+            'MADEIRA_BRUTA': {'nome': 'Madeira Bruta', 'icone': 'bi-tree', 'cor': 'success'},
+            'VARETA_MADEIRA': {'nome': 'Vareta de Madeira', 'icone': 'bi-rulers', 'cor': 'success'},
+            'TECIDO_MALHA': {'nome': 'Tecido Malha', 'icone': 'bi-basket', 'cor': 'info'},
+            'TECIDO_PANO_CRU': {'nome': 'Tecido Pano Cru', 'icone': 'bi-basket', 'cor': 'info'},
+            'CABO_PLASTICO': {'nome': 'Cabo Plástico', 'icone': 'bi-box', 'cor': 'warning'},
+        }
+        
+        try:
+            with transaction.atomic():
+                tipos_criados = {}
+                
+                # Para cada tipo antigo, cria um novo tipo
+                for tipo_key, tipo_data in mapeamento_tipos.items():
+                    novo_tipo, criado = TipoMateriaPrima.objects.get_or_create(
+                        nome=tipo_data['nome'],
+                        defaults={
+                            'icone': tipo_data['icone'],
+                            'cor': tipo_data['cor'],
+                            'descricao': f'Migrado automaticamente do tipo antigo: {tipo_key}'
+                        }
+                    )
+                    tipos_criados[tipo_key] = novo_tipo
+                
+                # Atualiza todas as matérias-primas para usar os novos tipos
+                for material in MateriaPrima.objects.all():
+                    if material.tipo in tipos_criados and not material.tipo_materia_prima:
+                        material.tipo_materia_prima = tipos_criados[material.tipo]
+                        material.save(update_fields=['tipo_materia_prima'])
+                
+                return len(tipos_criados), MateriaPrima.objects.filter(tipo_materia_prima__isnull=False).count()
+        except Exception as e:
+            print(f"Erro ao migrar tipos de matéria-prima: {e}")
+            return 0, 0
 
 class TipoProduto(models.Model):
     nome = models.CharField('Nome', max_length=50)
     descricao = models.TextField('Descrição', blank=True)
-    icone = models.CharField('Ícone', max_length=50, blank=True, help_text='Nome do ícone Bootstrap, ex: bi-box')
-    cor = models.CharField('Cor', max_length=20, default='primary', help_text='Nome da cor Bootstrap: primary, success, etc')
+    icone = models.CharField('Ícone', max_length=50, default='bi-box', blank=True, help_text='Nome do ícone Bootstrap, ex: bi-box')
+    cor = models.CharField('Cor', max_length=20, default='primary', blank=True, help_text='Nome da cor Bootstrap: primary, success, etc')
     ativo = models.BooleanField('Ativo', default=True)
     
     class Meta:

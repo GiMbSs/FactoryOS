@@ -1,6 +1,6 @@
 {% load widget_tweaks %}
 
-<form id="tipoProdutoForm" method="post">
+<form id="tipoMateriaPrimaForm" method="post">
     {% csrf_token %}
     
     <div class="modal-body">
@@ -14,7 +14,7 @@
         
         <div class="mb-3">
             <label for="id_nome" class="form-label fw-bold">Nome <span class="text-danger">*</span></label>
-            {% render_field form.nome class="form-control" placeholder="Nome do tipo de produto" %}
+            {% render_field form.nome class="form-control" placeholder="Nome do tipo de matéria-prima" %}
             {% if form.nome.errors %}
             <div class="invalid-feedback d-block">{{ form.nome.errors }}</div>
             {% endif %}
@@ -22,7 +22,7 @@
         
         <div class="mb-3">
             <label for="id_descricao" class="form-label fw-bold">Descrição</label>
-            {% render_field form.descricao class="form-control" placeholder="Descrição do tipo de produto" rows="2" %}
+            {% render_field form.descricao class="form-control" placeholder="Descrição do tipo de matéria-prima" rows="2" %}
             {% if form.descricao.errors %}
             <div class="invalid-feedback d-block">{{ form.descricao.errors }}</div>
             {% endif %}

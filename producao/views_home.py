@@ -14,25 +14,30 @@ class HomeView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Adicionar a data atual
-        context['today'] = timezone.now().date()
+        # Adicionar a data atual usando timezone.localtime para obter a data local correta
+        timezone_now = timezone.localtime(timezone.now())
+        hoje = timezone_now.date()
+        context['today'] = hoje
         
         # Produção
         context['ordens_andamento'] = OrdemProducao.objects.filter(status='EM_PRODUCAO')
         
         # Ordens finalizadas no mês atual (usando data_fim que é preenchida automaticamente)
-        hoje = timezone.now().date()
+        mes_atual = hoje.month
+        ano_atual = hoje.year
+        
         ordens_finalizadas = OrdemProducao.objects.filter(
             status='FINALIZADA',
-            data_fim__month=hoje.month,
-            data_fim__year=hoje.year
+            data_fim__month=mes_atual,
+            data_fim__year=ano_atual
         )
         context['ordens_finalizadas_mes'] = ordens_finalizadas.count()
         
-        # Gráfico produção mensal
+        # Gráfico produção mensal - usar timezone.localtime().date() em vez de datetime.now().date()
         meses = []
         quantidades = []
-        today = datetime.now().date()  # Usando date() para compatibilidade com DateField
+        today = timezone.localtime(timezone.now()).date()  # Usando timezone.localtime para obter a data local correta
+        
         for i in range(6):
             month = today - timedelta(days=30*i)
             meses.insert(0, month.strftime('%b/%Y'))
@@ -65,15 +70,10 @@ class HomeView(TemplateView):
         context['vendas_nao_finalizadas'] = Venda.objects.exclude(status__in=['FECHADA', 'CANCELADA'])
 
         # Alertas financeiro - contas vencidas
-        hoje = timezone.now().date()
         context['contas_pagar_vencidas'] = ContaPagar.objects.filter(status='PENDENTE', data_vencimento__lt=hoje)
         context['contas_receber_vencidas'] = ContaReceber.objects.filter(status='PENDENTE', data_vencimento__lt=hoje)
 
         # Dados financeiros
-        hoje = timezone.now().date()
-        mes_atual = hoje.month
-        ano_atual = hoje.year
-        
         # Receita mensal (vendas finalizadas no mês)
         receita_mensal = Venda.objects.filter(
             status='FECHADA',
