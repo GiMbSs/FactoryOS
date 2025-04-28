@@ -136,7 +136,7 @@
                         </td>
                         <td>
                             <div class="btn-group">
-                                <a href="{% url 'producao:produto_edit' item.produto.pk %}" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i></a>
+                                <a href="{% url 'producao:produto_update' item.produto.pk %}" class="btn btn-sm btn-primary"><i class="bi bi-pencil"></i></a>
                                 <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#detalhesModal{{ item.produto.pk }}"><i class="bi bi-info-circle"></i></button>
                             </div>
                         </td>
@@ -196,7 +196,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                    <a href="{% url 'producao:produto_edit' item.produto.pk %}" class="btn btn-primary">Editar Produto</a>
+                    <a href="{% url 'producao:produto_update' item.produto.pk %}" class="btn btn-primary">Editar Produto</a>
                 </div>
             </div>
         </div>

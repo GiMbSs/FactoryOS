@@ -27,7 +27,7 @@
             <a href="{% url 'producao:produto_list' %}" class="btn btn-info">
                 <i class="bi bi-box-seam"></i> Produtos
             </a>
-            <a href="{% url 'producao:ordem_create' %}" class="btn btn-success">
+            <a href="{% url 'producao:nova_ordem' %}" class="btn btn-success">
                 <i class="bi bi-plus-lg"></i> Nova Ordem
             </a>
         </div>
@@ -109,6 +109,11 @@
                     <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-bar-chart"></i> {% trans "Produção Mensal" %}</h6>
                 </div>
                 <div class="card-body">
+                    <!-- Debug dos dados do gráfico -->
+                    <div style="display: none;">
+                        <pre id="mesesData">{{ meses }}</pre>
+                        <pre id="quantidadesData">{{ quantidades }}</pre>
+                    </div>
                     <canvas id="producaoChart" height="300"></canvas>
                 </div>
             </div>
@@ -238,60 +243,84 @@ document.addEventListener('DOMContentLoaded', function() {
     // Gráfico de produção mensal
     const ctx = document.getElementById('producaoChart');
     if (ctx) {
-        new Chart(ctx.getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels: JSON.parse('{{ meses|escapejs }}'),
-                datasets: [{
-                    label: '{% trans "Quantidade Produzida" %}',
-                    data: JSON.parse('{{ quantidades|escapejs }}'),
-                    backgroundColor: 'rgba(78, 115, 223, 0.7)',
-                    borderColor: 'rgba(78, 115, 223, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                maintainAspectRatio: false,
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgb(255, 255, 255)',
-                        bodyColor: '#858796',
-                        titleMarginBottom: 10,
-                        titleColor: '#6e707e',
-                        titleFontSize: 14,
-                        borderColor: '#dddfeb',
-                        borderWidth: 1,
-                        padding: 15,
-                        displayColors: false
-                    }
+        try {
+            // Abordagem 1: Usar os dados já serializados em JSON
+            let mesesData = {{ meses|safe }};
+            let quantidadesData = {{ quantidades|safe }};
+            
+            // Abordagem 2: Backup para garantir - Obter dados de elementos escondidos
+            if (!mesesData || !quantidadesData) {
+                console.log("Dados não encontrados diretamente, usando fallback");
+                try {
+                    const mesesDebug = document.querySelector('#mesesData').textContent;
+                    const quantidadesDebug = document.querySelector('#quantidadesData').textContent;
+                    mesesData = JSON.parse(mesesDebug);
+                    quantidadesData = JSON.parse(quantidadesDebug);
+                } catch (e) {
+                    console.error("Erro ao fazer parse dos dados de backup:", e);
+                    // Valores padrão se tudo falhar
+                    mesesData = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'];
+                    quantidadesData = [0, 0, 0, 0, 0, 0];
+                }
+            }
+
+            new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: mesesData,
+                    datasets: [{
+                        label: '{% trans "Quantidade Produzida" %}',
+                        data: quantidadesData,
+                        backgroundColor: 'rgba(78, 115, 223, 0.7)',
+                        borderColor: 'rgba(78, 115, 223, 1)',
+                        borderWidth: 1
+                    }]
                 },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            borderDash: [2],
-                            drawBorder: false,
-                            zeroLineColor: "rgba(0, 0, 0, 0.1)",
-                            zeroLineBorderDash: [2],
-                            zeroLineBorderDashOffset: [2]
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
                         },
-                        ticks: {
-                            stepSize: 1
+                        tooltip: {
+                            backgroundColor: 'rgb(255, 255, 255)',
+                            bodyColor: '#858796',
+                            titleMarginBottom: 10,
+                            titleColor: '#6e707e',
+                            titleFontSize: 14,
+                            borderColor: '#dddfeb',
+                            borderWidth: 1,
+                            padding: 15,
+                            displayColors: false
                         }
                     },
-                    x: {
-                        grid: {
-                            display: false,
-                            drawBorder: false
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                borderDash: [2],
+                                drawBorder: false,
+                                zeroLineColor: "rgba(0, 0, 0, 0.1)",
+                                zeroLineBorderDash: [2],
+                                zeroLineBorderDashOffset: [2]
+                            },
+                            ticks: {
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false,
+                                drawBorder: false
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
+        } catch (error) {
+            console.error("Erro ao renderizar o gráfico:", error);
+        }
     }
 });
 </script>

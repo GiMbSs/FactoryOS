@@ -32,16 +32,16 @@
     <div class="row mb-4">
         <div class="col-12">
             {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            <div class="alert alert-{% if 'error' in message.tags %}danger{% elif 'success' in message.tags %}success{% else %}info{% endif %} alert-dismissible fade show" role="alert">
                 {% if 'error' in message.tags %}
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                <h5 class="alert-heading fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Atenção</h5>
                 {% elif 'success' in message.tags %}
-                <i class="bi bi-check-circle-fill me-2"></i>
+                <h5 class="alert-heading fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Sucesso</h5>
                 {% else %}
-                <i class="bi bi-info-circle me-2"></i>
+                <h5 class="alert-heading fw-bold"><i class="bi bi-info-circle me-2"></i>Informação</h5>
                 {% endif %}
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <p>{{ message }}</p>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
             </div>
             {% endfor %}
         </div>
@@ -60,6 +60,32 @@
                     {% endif %}
                 </div>
                 <div class="card-body">
+                    {% if form.errors %}
+                    <div class="alert alert-danger mb-4">
+                        <h5 class="alert-heading fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>Por favor, corrija os seguintes erros:</h5>
+                        <ul class="mb-0 mt-2">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                    <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                            {% for formset in itens_formset %}
+                                {% for field in formset %}
+                                    {% for error in field.errors %}
+                                        <li><strong>Item {{ forloop.parentloop.parentloop.counter }} - {{ field.label }}:</strong> {{ error }}</li>
+                                    {% endfor %}
+                                {% endfor %}
+                            {% endfor %}
+                            {% for error in itens_formset.non_form_errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
                     <form method="post" autocomplete="off" id="pedidoForm" onsubmit="return validarFormulario();">
                         {% csrf_token %}
                         <div class="row">

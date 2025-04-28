@@ -9,18 +9,22 @@ from financeiro.models import ContaPagar, ContaReceber
 import json
 
 class HomeView(TemplateView):
+    """
+    Dashboard principal do sistema. 
+    Apresenta visão geral de todas as áreas: produção, estoque, financeiro e comercial.
+    """
     template_name = 'index.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Adicionar a data atual
+        # Data para referência nas consultas
         context['today'] = timezone.now().date()
         
-        # Produção
+        # Painel de Produção - Ordens em andamento
         context['ordens_andamento'] = OrdemProducao.objects.filter(status='EM_PRODUCAO')
         
-        # Ordens finalizadas no mês atual (usando data_fim que é preenchida automaticamente)
+        # Resumo de ordens finalizadas no mês atual
         hoje = timezone.now().date()
         ordens_finalizadas = OrdemProducao.objects.filter(
             status='FINALIZADA',
@@ -29,14 +33,15 @@ class HomeView(TemplateView):
         )
         context['ordens_finalizadas_mes'] = ordens_finalizadas.count()
         
-        # Gráfico produção mensal
+        # Dados para o gráfico de produção dos últimos 6 meses
         meses = []
         quantidades = []
-        today = datetime.now().date()  # Usando date() para compatibilidade com DateField
+        today = datetime.now().date()
         for i in range(6):
             month = today - timedelta(days=30*i)
             meses.insert(0, month.strftime('%b/%Y'))
-            # Conta ordens finalizadas no mês, garantindo que data_fim existe
+            
+            # Busca ordens finalizadas em cada mês
             qs = OrdemProducao.objects.filter(
                 status='FINALIZADA',
                 data_fim__isnull=False,
@@ -45,11 +50,11 @@ class HomeView(TemplateView):
             )
             quantidades.insert(0, qs.count())
             
-        # Serializar os dados como JSON para o gráfico
+        # Prepara dados para o gráfico em JavaScript
         context['meses'] = json.dumps(meses)
         context['quantidades'] = json.dumps(quantidades)
         
-        # Estoque
+        # Alertas de estoque abaixo do mínimo
         context['alertas_estoque'] = [
             {
                 'materia_prima': saldo.materia_prima.nome,
@@ -61,20 +66,19 @@ class HomeView(TemplateView):
             if saldo.quantidade_atual < (saldo.materia_prima.estoque_minimo if saldo.materia_prima.estoque_minimo > 0 else saldo.calcular_estoque_minimo())
         ]
 
-        # Alerta de vendas não finalizadas
+        # Vendas em aberto (não finalizadas nem canceladas)
         context['vendas_nao_finalizadas'] = Venda.objects.exclude(status__in=['FECHADA', 'CANCELADA'])
 
-        # Alertas financeiro - contas vencidas
+        # Contas vencidas no financeiro
         hoje = timezone.now().date()
         context['contas_pagar_vencidas'] = ContaPagar.objects.filter(status='PENDENTE', data_vencimento__lt=hoje)
         context['contas_receber_vencidas'] = ContaReceber.objects.filter(status='PENDENTE', data_vencimento__lt=hoje)
 
-        # Dados financeiros
-        hoje = timezone.now().date()
+        # Indicadores financeiros do mês atual
         mes_atual = hoje.month
         ano_atual = hoje.year
         
-        # Receita mensal (vendas finalizadas no mês)
+        # Receita do mês atual
         receita_mensal = Venda.objects.filter(
             status='FECHADA',
             data_venda__month=mes_atual,
@@ -82,10 +86,8 @@ class HomeView(TemplateView):
         ).aggregate(total=Sum('valor_total'))['total'] or 0
         context['receita_mensal'] = f"{receita_mensal:,.2f}"
 
-        # Contagem de vendas finalizadas
+        # Estatísticas gerais do sistema
         context['vendas_finalizadas_count'] = Venda.objects.filter(status='FECHADA').count()
-
-        # Contagem de clientes e fornecedores
         context['clientes_count'] = Cliente.objects.count()
         context['fornecedores_count'] = Fornecedor.objects.count()
 

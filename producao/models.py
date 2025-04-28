@@ -110,7 +110,23 @@ class MateriaPrima(models.Model):
     def __str__(self):
         return f"{self.nome} ({self.get_tipo_display()})"
 
+class TipoProduto(models.Model):
+    nome = models.CharField('Nome', max_length=50)
+    descricao = models.TextField('Descrição', blank=True)
+    icone = models.CharField('Ícone', max_length=50, blank=True, help_text='Nome do ícone Bootstrap, ex: bi-box')
+    cor = models.CharField('Cor', max_length=20, default='primary', help_text='Nome da cor Bootstrap: primary, success, etc')
+    ativo = models.BooleanField('Ativo', default=True)
+    
+    class Meta:
+        verbose_name = 'Tipo de Produto'
+        verbose_name_plural = 'Tipos de Produto'
+        ordering = ['nome']
+    
+    def __str__(self):
+        return self.nome
+
 class Produto(models.Model):
+    # Mantemos os TIPO_CHOICES para compatibilidade com código existente
     TIPO_CHOICES = [
         ('PLASTICO', 'Plástico'),
         ('MADEIRA', 'Madeira'),
@@ -121,7 +137,19 @@ class Produto(models.Model):
     nome = models.CharField('Nome', max_length=100)
     descricao = models.TextField('Descrição', blank=True)
     codigo_sku = models.CharField('SKU', max_length=20, unique=True)
+    
+    # Adicionamos um campo ForeignKey para o novo modelo TipoProduto
+    tipo_produto = models.ForeignKey(
+        TipoProduto,
+        on_delete=models.PROTECT,
+        verbose_name='Tipo de Produto',
+        null=True,
+        blank=True
+    )
+    
+    # Mantemos o campo tipo para compatibilidade com código existente
     tipo = models.CharField('Tipo', max_length=10, choices=TIPO_CHOICES)
+    
     materias_primas = models.ManyToManyField(
         MateriaPrima,
         through='ProdutoMateriaPrima',
@@ -134,21 +162,14 @@ class Produto(models.Model):
         ordering = ['nome']
 
     def __str__(self):
+        if self.tipo_produto:
+            return f"{self.nome} ({self.tipo_produto.nome})"
         return f"{self.nome} ({self.get_tipo_display()})"
 
     def calcular_custo(self):
-        from decimal import Decimal, ROUND_HALF_UP
-        custo_materias = sum(
-            pm.quantidade_utilizada * pm.materia_prima.custo_unitario
-            for pm in self.produtomateriaprima_set.all()
-        )
-        if not isinstance(custo_materias, Decimal):
-            custo_materias = Decimal(str(custo_materias))
-        mao_obra = Decimal('2.50') if self.tipo == 'PLASTICO' else Decimal('4.00')
-        custo_total = custo_materias + mao_obra
-        custo_indireto = custo_total * Decimal('0.10')
-        total = custo_total + custo_indireto
-        return total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        # Delegamos a lógica para o service
+        from .services import ProdutoService
+        return ProdutoService.calcular_custo(self)
 
 class ProdutoMateriaPrima(models.Model):
     produto = models.ForeignKey(

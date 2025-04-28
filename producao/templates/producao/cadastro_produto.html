@@ -78,11 +78,17 @@
                         </div>
                         
                         <div class="mb-4">
-                            <label for="id_tipo" class="form-label fw-bold">Tipo <span class="text-danger">*</span></label>
-                            {% render_field form.tipo class="form-select" %}
-                            {% if form.tipo.errors %}
-                            <div class="invalid-feedback d-block">{{ form.tipo.errors }}</div>
+                            <label for="id_tipo_produto" class="form-label fw-bold">Tipo de Produto <span class="text-danger">*</span></label>
+                            {% render_field form.tipo_produto class="form-select" %}
+                            {% if form.tipo_produto.errors %}
+                            <div class="invalid-feedback d-block">{{ form.tipo_produto.errors }}</div>
                             {% endif %}
+                            {% if form.tipo_produto.help_text %}
+                            <div class="form-text">{{ form.tipo_produto.help_text }}</div>
+                            {% endif %}
+                            <a href="#" class="btn btn-sm btn-outline-primary mt-2" id="btnNovoTipo">
+                                <i class="bi bi-plus-circle"></i> Cadastrar novo tipo
+                            </a>
                         </div>
                         
                         <hr class="my-4">
@@ -112,7 +118,7 @@
                                                 <tr class="materia-row{% if form.instance.pk and form.DELETE.value %} table-danger text-decoration-line-through{% endif %}">
                                                     {{ form.id }}
                                                     <td>
-                                                        {% render_field form.materia_prima class="form-select" %}
+                                                        {% render_field form.materia_prima class="form-select materia-prima-select" %}
                                                         {% if form.materia_prima.errors %}
                                                         <div class="invalid-feedback d-block">{{ form.materia_prima.errors }}</div>
                                                         {% endif %}
@@ -120,7 +126,13 @@
                                                     <td>
                                                         <div class="input-group">
                                                             {% render_field form.quantidade_utilizada class="form-control" min="1" %}
-                                                            <span class="input-group-text">un</span>
+                                                            <span class="input-group-text unidade-medida">
+                                                                {% if form.instance.materia_prima %}
+                                                                    {{ form.instance.materia_prima.unidade_medida|default:"un" }}
+                                                                {% else %}
+                                                                    un
+                                                                {% endif %}
+                                                            </span>
                                                         </div>
                                                         {% if form.quantidade_utilizada.errors %}
                                                         <div class="invalid-feedback d-block">{{ form.quantidade_utilizada.errors }}</div>
@@ -158,14 +170,14 @@
                                     {% for field in materias_formset.empty_form.visible_fields %}
                                         {% if forloop.first %}
                                         <td>
-                                            {% render_field field class="form-select" %}
+                                            {% render_field field class="form-select materia-prima-select" %}
                                         </td>
                                         {% endif %}
                                         {% if forloop.counter == 2 %}
                                         <td>
                                             <div class="input-group">
                                                 {% render_field field class="form-control" min="1" %}
-                                                <span class="input-group-text">un</span>
+                                                <span class="input-group-text unidade-medida">un</span>
                                             </div>
                                         </td>
                                         {% endif %}
@@ -238,9 +250,57 @@
     </div>
 </div>
 
+<!-- Modal para cadastro de tipos de produto -->
+<div class="modal fade" id="tipoProdutoModal" tabindex="-1" aria-labelledby="tipoProdutoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tipoProdutoModalLabel">Novo Tipo de Produto</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div id="tipoProdutoModalContent">
+                <!-- O conteúdo do modal será carregado aqui via AJAX -->
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Inicializando o formulário de produto...');
+    console.log('Inicializando o formulário de produto com script melhorado...');
+    
+    // Função para atualizar a unidade de medida ao selecionar uma matéria-prima
+    function setupMateriaPrimaSelectChange(select) {
+        if (!select) return;
+        
+        select.addEventListener('change', function() {
+            const materiaPrimaId = this.value;
+            if (!materiaPrimaId) return;
+            
+            const row = this.closest('tr');
+            const unidadeSpan = row.querySelector('.unidade-medida');
+            
+            // Buscar informações da matéria-prima via API
+            fetch(`/producao/materias-primas/${materiaPrimaId}/info/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Atualizar a unidade de medida
+                        unidadeSpan.textContent = data.unidade;
+                    } else {
+                        console.error('Erro ao obter unidade de medida:', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro na requisição:', error);
+                });
+        });
+    }
+    
+    // Configurar os selects existentes
+    document.querySelectorAll('.materia-prima-select').forEach(select => {
+        setupMateriaPrimaSelectChange(select);
+    });
     
     // Adicionar novo item de matéria-prima
     const btnAdicionarMateria = document.getElementById('add-materia-btn');
@@ -250,6 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const totalFormsInput = document.querySelector('input[name="produtomateriaprima_set-TOTAL_FORMS"]');
             if (!totalFormsInput) {
                 console.error('Erro: Não foi possível encontrar o formulário de gerenciamento de matérias-primas.');
+                alert('Erro ao adicionar matéria-prima. Verifique o console para mais detalhes.');
                 return;
             }
             
@@ -260,50 +321,156 @@ document.addEventListener('DOMContentLoaded', function() {
             const template = document.getElementById('materia-empty-form-template');
             if (!template) {
                 console.error('Erro: Template para nova matéria-prima não encontrado.');
+                alert('Erro ao adicionar matéria-prima. Verifique o console para mais detalhes.');
                 return;
             }
             
-            // Criar nova linha
-            const newRow = document.createElement('tr');
-            newRow.className = 'materia-row';
-            newRow.innerHTML = template.innerHTML.replace(/__prefix__/g, newFormIdx);
+            console.log('Adicionando nova matéria-prima com índice:', newFormIdx);
+            
+            // Criar nova linha a partir do template HTML
+            const tbody = document.querySelector('#materias-tbody');
+            
+            // Clone o conteúdo do template
+            const clone = template.content.cloneNode(true);
+            
+            // Substituir o placeholder __prefix__ pelo índice real
+            const inputs = clone.querySelectorAll('select, input, textarea');
+            inputs.forEach(input => {
+                if (input.name) {
+                    input.name = input.name.replace(/__prefix__/g, newFormIdx);
+                }
+                if (input.id) {
+                    input.id = input.id.replace(/__prefix__/g, newFormIdx);
+                }
+            });
             
             // Adicionar à tabela
-            document.querySelector('#materias-tbody').appendChild(newRow);
+            tbody.appendChild(clone);
             
             // Atualizar o contador de formulários
             totalFormsInput.value = newFormIdx + 1;
             
-            // Adicionar event listener para o botão de remover
-            const removeBtn = newRow.querySelector('.remove-materia-btn');
-            if (removeBtn) {
-                removeBtn.addEventListener('click', function() {
-                    const row = this.closest('tr');
-                    const delInput = row.querySelector('input[name$="-DELETE"]');
-                    if (delInput) {
-                        delInput.checked = true;
-                        row.style.display = 'none';
-                    } else {
-                        row.remove();
-                    }
-                });
+            // Configurar a nova linha
+            const rows = tbody.querySelectorAll('tr.materia-row');
+            const lastRow = rows[rows.length - 1];
+            
+            if (lastRow) {
+                // Configurar o botão de remover
+                const removeBtn = lastRow.querySelector('.remove-materia-btn');
+                if (removeBtn) {
+                    removeBtn.addEventListener('click', function() {
+                        const row = this.closest('tr');
+                        const delInput = row.querySelector('input[name$="-DELETE"]');
+                        if (delInput) {
+                            delInput.checked = true;
+                            row.classList.add('table-danger', 'text-decoration-line-through');
+                        } else {
+                            row.remove();
+                        }
+                    });
+                }
+                
+                // Configurar o select de matéria-prima
+                const newSelect = lastRow.querySelector('.materia-prima-select');
+                setupMateriaPrimaSelectChange(newSelect);
             }
+            
+            console.log('Nova matéria-prima adicionada com sucesso!');
         });
     }
     
-    // Remover matéria-prima
+    // Configurar botões de remover existentes
     document.querySelectorAll('.remove-materia-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const row = this.closest('tr');
             const delInput = row.querySelector('input[name$="-DELETE"]');
             if (delInput) {
                 delInput.checked = true;
-                row.style.display = 'none';
+                row.classList.add('table-danger', 'text-decoration-line-through');
             } else {
                 row.remove();
             }
         });
     });
+    
+    // Mostrar/ocultar linhas marcadas para exclusão
+    document.querySelectorAll('.item-delete').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const row = this.closest('tr');
+            if (this.checked) {
+                row.classList.add('table-danger', 'text-decoration-line-through');
+            } else {
+                row.classList.remove('table-danger', 'text-decoration-line-through');
+            }
+        });
+    });
+    
+    // Script para o modal de tipo de produto
+    const btnNovoTipo = document.getElementById('btnNovoTipo');
+    const modal = document.getElementById('tipoProdutoModal');
+    const modalContent = document.getElementById('tipoProdutoModalContent');
+    const tipoProdutoSelect = document.getElementById('id_tipo_produto');
+    
+    if (btnNovoTipo && modal && modalContent) {
+        // Bootstrap Modal
+        const tipoProdutoModalObj = new bootstrap.Modal(modal);
+        
+        btnNovoTipo.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Carrega o modal via AJAX
+            fetch('{% url "producao:tipo_produto_modal" %}')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('tipoProdutoModalLabel').textContent = data.title;
+                    modalContent.innerHTML = data.html;
+                    tipoProdutoModalObj.show();
+                    
+                    // Configura o form dentro do modal para envio via AJAX
+                    const form = document.getElementById('tipoProdutoForm');
+                    if (form) {
+                        form.addEventListener('submit', function(e) {
+                            e.preventDefault();
+                            
+                            const formData = new FormData(form);
+                            fetch('{% url "producao:tipo_produto_modal" %}', {
+                                method: 'POST',
+                                body: formData,
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    // Adiciona o novo tipo ao select
+                                    const option = document.createElement('option');
+                                    option.value = data.id;
+                                    option.textContent = data.nome;
+                                    option.selected = true;
+                                    tipoProdutoSelect.appendChild(option);
+                                    
+                                    // Fecha o modal e mostra mensagem de sucesso
+                                    tipoProdutoModalObj.hide();
+                                    alert(data.message);
+                                } else {
+                                    // Exibe erros
+                                    console.error('Erro ao salvar tipo de produto:', data.errors);
+                                    alert('Erro ao salvar tipo de produto. Verifique os campos.');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Erro na requisição:', error);
+                                alert('Erro ao processar a requisição. Tente novamente.');
+                            });
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar modal:', error);
+                    alert('Não foi possível carregar o formulário de tipo de produto. Tente novamente.');
+                });
+        });
+    }
 });
 </script>
 {% endblock %}

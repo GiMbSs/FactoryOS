@@ -7,22 +7,9 @@ from django.contrib.auth.decorators import user_passes_test
 from django.utils.decorators import method_decorator
 from django.shortcuts import redirect
 
-class LogListView(ListView):
-    template_name = 'core/log_list.html'
-    model = LogEntry
-    context_object_name = 'logs'
-    ordering = ['-data']
+from django.contrib import messages
+from django.utils import timezone
 
-
-def registrar_log(request, modulo, acao):
-    from .models import LogEntry
-    LogEntry.objects.create(
-        modulo=modulo,
-        acao=acao,
-        usuario=request.user if hasattr(request, 'user') and request.user.is_authenticated else None
-    )
-
-@user_passes_test(lambda u: u.is_superuser)
-def limpar_log(request):
-    LogEntry.objects.all().delete()
-    return redirect('core:log_list')
+# Importar tudo dos módulos reorganizados para manter compatibilidade
+from .views.dashboard import *
+from .views.logs import *

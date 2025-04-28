@@ -7,6 +7,7 @@ from django.utils import timezone
 from .models import Cliente, Venda, Fornecedor, ItemVenda
 from .forms import ClienteForm, VendaForm, FornecedorForm, ItemVendaForm
 from django.forms import inlineformset_factory
+from django.db import models
 
 class FornecedorListView(ListView):
     model = Fornecedor
@@ -147,10 +148,57 @@ class VendaCreateView(CreateView):
     def form_valid(self, form):
         context = self.get_context_data()
         itens_formset = context['itens_formset']
+        
+        # Verificar se há pelo menos um item preenchido corretamente
+        algum_item_valido = False
+        for form_item in itens_formset.forms:
+            if form_item.is_valid() and form_item.cleaned_data and not form_item.cleaned_data.get('DELETE', False):
+                # Verificar se os campos principais estão preenchidos
+                produto = form_item.cleaned_data.get('produto')
+                quantidade = form_item.cleaned_data.get('quantidade')
+                preco = form_item.cleaned_data.get('preco_unitario')
+                if produto and quantidade and preco:
+                    algum_item_valido = True
+                    break
+        
+        # Se pelo menos um item é válido, ignorar os erros dos outros itens vazios
+        if algum_item_valido:
+            # Limpar os erros de itens vazios
+            for form_item in itens_formset.forms:
+                if not form_item.is_valid() and form_item.errors:
+                    # Se for um item vazio, ignorar os erros
+                    data = form_item.cleaned_data if hasattr(form_item, 'cleaned_data') else {}
+                    if not data.get('produto') and not data.get('quantidade') and not data.get('preco_unitario'):
+                        for field in form_item.errors:
+                            form_item.errors[field] = []
+                        form_item._errors = {}
+            
+            # Forçar o formset a ser válido se havia apenas erros em itens vazios
+            if not itens_formset.is_valid():
+                # Recalcular a validação do formset
+                itens_formset.is_valid()
+        
         if itens_formset.is_valid() and form.is_valid():
             self.object = form.save()
             itens_formset.instance = self.object
-            itens_formset.save()
+            
+            # Salvar apenas os itens com dados
+            instances = itens_formset.save(commit=False)
+            for instance in instances:
+                # Verificação mais segura para evitar o erro RelatedObjectDoesNotExist
+                try:
+                    produto_exists = instance.produto_id is not None
+                except:
+                    produto_exists = False
+                
+                # Só salva se tiver produto, quantidade e preço
+                if produto_exists and instance.quantidade and instance.preco_unitario:
+                    instance.save()
+            
+            # Tratar itens marcados para deleção
+            for obj in itens_formset.deleted_objects:
+                obj.delete()
+                
             messages.success(self.request, 'Pedido cadastrado com sucesso!')
             return super().form_valid(form)
         else:
@@ -159,15 +207,60 @@ class VendaCreateView(CreateView):
     def form_invalid(self, form):
         context = self.get_context_data()
         itens_formset = context.get('itens_formset')
+        
+        # Agrupar mensagens de erro
+        form_errors = []
+        formset_errors = []
+        
+        # Coletar erros do formulário principal
         if form.errors:
             for field, errors in form.errors.items():
                 for error in errors:
-                    messages.error(self.request, f"Erro no campo '{field}': {error}")
+                    field_label = form[field].label or field
+                    form_errors.append(f"{field_label}: {error}")
+        
+        # Coletar erros do formset (apenas para itens com dados parciais)
         if itens_formset and itens_formset.errors:
-            for idx, form_errors in enumerate(itens_formset.errors):
-                for field, errors in form_errors.items():
-                    for error in errors:
-                        messages.error(self.request, f"Erro no item {idx+1}, campo '{field}': {error}")
+            item_errors = {}  # Dicionário para agrupar erros por item
+            
+            for idx, form_errors_dict in enumerate(itens_formset.errors):
+                if form_errors_dict:  # Se há erros neste formulário
+                    item_form = itens_formset.forms[idx]
+                    
+                    # Verificar se o item tem pelo menos um campo preenchido
+                    data = item_form.cleaned_data if hasattr(item_form, 'cleaned_data') else {}
+                    produto = data.get('produto')
+                    quantidade = data.get('quantidade')
+                    preco = data.get('preco_unitario')
+                    
+                    # Se pelo menos um campo está preenchido, considerar os erros
+                    if produto or quantidade or preco:
+                        item_num = idx + 1
+                        if item_num not in item_errors:
+                            item_errors[item_num] = []
+                            
+                        for field, errors in form_errors_dict.items():
+                            field_label = item_form[field].label or field
+                            for error in errors:
+                                item_errors[item_num].append(f"{field_label}: {error}")
+            
+            # Converter os erros agrupados em mensagens
+            for item_num, errors in item_errors.items():
+                if errors:
+                    formset_errors.append(f"Item {item_num}: {' / '.join(errors)}")
+        
+        # Exibir mensagens de erro agrupadas
+        if form_errors:
+            messages.error(self.request, f"Erros no formulário: {' / '.join(form_errors)}")
+        
+        if formset_errors:
+            for error in formset_errors:
+                messages.error(self.request, error)
+                
+        # Se não houver produtos válidos, mostrar uma mensagem mais clara
+        if not form_errors and not formset_errors and itens_formset and not itens_formset.is_valid():
+            messages.error(self.request, "Adicione pelo menos um item válido ao pedido. É necessário preencher os campos Produto, Quantidade e Preço.")
+            
         return super().form_invalid(form)
 
 class VendaUpdateView(UpdateView):
@@ -188,10 +281,57 @@ class VendaUpdateView(UpdateView):
     def form_valid(self, form):
         context = self.get_context_data()
         itens_formset = context['itens_formset']
+        
+        # Verificar se há pelo menos um item preenchido corretamente
+        algum_item_valido = False
+        for form_item in itens_formset.forms:
+            if form_item.is_valid() and form_item.cleaned_data and not form_item.cleaned_data.get('DELETE', False):
+                # Verificar se os campos principais estão preenchidos
+                produto = form_item.cleaned_data.get('produto')
+                quantidade = form_item.cleaned_data.get('quantidade')
+                preco = form_item.cleaned_data.get('preco_unitario')
+                if produto and quantidade and preco:
+                    algum_item_valido = True
+                    break
+        
+        # Se pelo menos um item é válido, ignorar os erros dos outros itens vazios
+        if algum_item_valido:
+            # Limpar os erros de itens vazios
+            for form_item in itens_formset.forms:
+                if not form_item.is_valid() and form_item.errors:
+                    # Se for um item vazio, ignorar os erros
+                    data = form_item.cleaned_data if hasattr(form_item, 'cleaned_data') else {}
+                    if not data.get('produto') and not data.get('quantidade') and not data.get('preco_unitario'):
+                        for field in form_item.errors:
+                            form_item.errors[field] = []
+                        form_item._errors = {}
+            
+            # Forçar o formset a ser válido se havia apenas erros em itens vazios
+            if not itens_formset.is_valid():
+                # Recalcular a validação do formset
+                itens_formset.is_valid()
+                
         if itens_formset.is_valid() and form.is_valid():
             self.object = form.save()
             itens_formset.instance = self.object
-            itens_formset.save()
+            
+            # Salvar apenas os itens com dados
+            instances = itens_formset.save(commit=False)
+            for instance in instances:
+                # Verificação mais segura para evitar o erro RelatedObjectDoesNotExist
+                try:
+                    produto_exists = instance.produto_id is not None
+                except:
+                    produto_exists = False
+                
+                # Só salva se tiver produto, quantidade e preço
+                if produto_exists and instance.quantidade and instance.preco_unitario:
+                    instance.save()
+            
+            # Tratar itens marcados para deleção
+            for obj in itens_formset.deleted_objects:
+                obj.delete()
+                
             messages.success(self.request, 'Pedido atualizado com sucesso!')
             return super().form_valid(form)
         else:
@@ -200,15 +340,60 @@ class VendaUpdateView(UpdateView):
     def form_invalid(self, form):
         context = self.get_context_data()
         itens_formset = context.get('itens_formset')
+        
+        # Agrupar mensagens de erro
+        form_errors = []
+        formset_errors = []
+        
+        # Coletar erros do formulário principal
         if form.errors:
             for field, errors in form.errors.items():
                 for error in errors:
-                    messages.error(self.request, f"Erro no campo '{field}': {error}")
+                    field_label = form[field].label or field
+                    form_errors.append(f"{field_label}: {error}")
+        
+        # Coletar erros do formset (apenas para itens com dados parciais)
         if itens_formset and itens_formset.errors:
-            for idx, form_errors in enumerate(itens_formset.errors):
-                for field, errors in form_errors.items():
-                    for error in errors:
-                        messages.error(self.request, f"Erro no item {idx+1}, campo '{field}': {error}")
+            item_errors = {}  # Dicionário para agrupar erros por item
+            
+            for idx, form_errors_dict in enumerate(itens_formset.errors):
+                if form_errors_dict:  # Se há erros neste formulário
+                    item_form = itens_formset.forms[idx]
+                    
+                    # Verificar se o item tem pelo menos um campo preenchido
+                    data = item_form.cleaned_data if hasattr(item_form, 'cleaned_data') else {}
+                    produto = data.get('produto')
+                    quantidade = data.get('quantidade')
+                    preco = data.get('preco_unitario')
+                    
+                    # Se pelo menos um campo está preenchido, considerar os erros
+                    if produto or quantidade or preco:
+                        item_num = idx + 1
+                        if item_num not in item_errors:
+                            item_errors[item_num] = []
+                            
+                        for field, errors in form_errors_dict.items():
+                            field_label = item_form[field].label or field
+                            for error in errors:
+                                item_errors[item_num].append(f"{field_label}: {error}")
+            
+            # Converter os erros agrupados em mensagens
+            for item_num, errors in item_errors.items():
+                if errors:
+                    formset_errors.append(f"Item {item_num}: {' / '.join(errors)}")
+        
+        # Exibir mensagens de erro agrupadas
+        if form_errors:
+            messages.error(self.request, f"Erros no formulário: {' / '.join(form_errors)}")
+        
+        if formset_errors:
+            for error in formset_errors:
+                messages.error(self.request, error)
+                
+        # Se não houver produtos válidos, mostrar uma mensagem mais clara
+        if not form_errors and not formset_errors and itens_formset and not itens_formset.is_valid():
+            messages.error(self.request, "Adicione pelo menos um item válido ao pedido. É necessário preencher os campos Produto, Quantidade e Preço.")
+            
         return super().form_invalid(form)
 
 class VendaDeleteView(DeleteView):

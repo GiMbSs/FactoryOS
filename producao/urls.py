@@ -1,49 +1,38 @@
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import (
-    DashboardView,
-    OrdemProducaoListView,
-    OrdemProducaoCreateView,
-    OrdemProducaoDetailView,
-    MateriaPrimaViewSet,
-    ProdutoViewSet,
-    OrdemProducaoViewSet,
-    ProdutoListView,
-    ProdutoCreateView,
-    ProdutoUpdateView,
-    ProdutoDeleteView,
-    MateriaPrimaListView,
-    MateriaPrimaCreateView,
-    MateriaPrimaUpdateView,
-    MateriaPrimaDeleteView
-)
-from .views_api import ProdutoMateriasPrimasAPIView
+from . import views
+from .views.ordens import OrdemProducaoUpdateView, OrdemProducaoDeleteView
 
 app_name = 'producao'
 
-router = DefaultRouter()
-router.register(r'api/materias-primas', MateriaPrimaViewSet)
-router.register(r'api/produtos', ProdutoViewSet)
-router.register(r'api/ordens-producao', OrdemProducaoViewSet)
-
 urlpatterns = [
-    path('api/produtos/<int:produto_id>/materias-primas/', ProdutoMateriasPrimasAPIView.as_view(), name='api_produto_materias_primas'),
-    path('dashboard/', DashboardView.as_view(), name='dashboard'),
-    path('ordens/', OrdemProducaoListView.as_view(), name='lista_ordens'),
-    path('ordens/nova/', OrdemProducaoCreateView.as_view(), name='ordem_create'),
-    path('ordens/<int:pk>/', OrdemProducaoDetailView.as_view(), name='ordem_detail'),
-    path('ordens/<int:pk>/editar/', __import__('producao.views_ordemproducao_editdelete').views_ordemproducao_editdelete.OrdemProducaoUpdateView.as_view(), name='ordem_edit'),
-    path('ordens/<int:pk>/excluir/', __import__('producao.views_ordemproducao_editdelete').views_ordemproducao_editdelete.OrdemProducaoDeleteView.as_view(), name='ordem_delete'),
-
-    path('produtos/', ProdutoListView.as_view(), name='produto_list'),
-    path('produtos/novo/', ProdutoCreateView.as_view(), name='produto_create'),
-    path('produtos/<int:pk>/editar/', ProdutoUpdateView.as_view(), name='produto_edit'),
-    path('produtos/<int:pk>/excluir/', ProdutoDeleteView.as_view(), name='produto_delete'),
-
-    path('materias-primas/', MateriaPrimaListView.as_view(), name='materiaprima_list'),
-    path('materias-primas/nova/', MateriaPrimaCreateView.as_view(), name='materiaprima_create'),
-    path('materias-primas/<int:pk>/editar/', MateriaPrimaUpdateView.as_view(), name='materiaprima_edit'),
-    path('materias-primas/<int:pk>/excluir/', MateriaPrimaDeleteView.as_view(), name='materiaprima_delete'),
-
-    path('api/', include(router.urls)),
+    # API - agora usa o módulo API reorganizado
+    path('api/', include('producao.api.urls')),
+    
+    # Dashboard
+    path('', views.DashboardView.as_view(), name='dashboard'),
+    
+    # Produtos
+    path('produtos/', views.ProdutoListView.as_view(), name='produto_list'),
+    path('produtos/novo/', views.ProdutoCreateView.as_view(), name='produto_create'),
+    path('produtos/<int:pk>/editar/', views.ProdutoUpdateView.as_view(), name='produto_update'),
+    path('produtos/<int:pk>/excluir/', views.ProdutoDeleteView.as_view(), name='produto_delete'),
+    
+    # Tipos de Produto (Modal)
+    path('produtos/tipos/modal/', views.tipo_produto_modal, name='tipo_produto_modal'),
+    
+    # Matérias-Primas
+    path('materias-primas/', views.MateriaPrimaListView.as_view(), name='materiaprima_list'),
+    path('materias-primas/nova/', views.MateriaPrimaCreateView.as_view(), name='materiaprima_create'),
+    path('materias-primas/<int:pk>/editar/', views.MateriaPrimaUpdateView.as_view(), name='materiaprima_update'),
+    path('materias-primas/<int:pk>/excluir/', views.MateriaPrimaDeleteView.as_view(), name='materiaprima_delete'),
+    
+    # API para obter informações da matéria-prima
+    path('materias-primas/<int:materia_prima_id>/info/', views.get_materia_prima_info, name='get_materia_prima_info'),
+    
+    # Ordens de Produção
+    path('ordens/', views.OrdemProducaoListView.as_view(), name='lista_ordens'),
+    path('ordens/nova/', views.OrdemProducaoCreateView.as_view(), name='nova_ordem'),
+    path('ordens/<int:pk>/', views.OrdemProducaoDetailView.as_view(), name='ordem_detail'),
+    path('ordens/<int:pk>/editar/', OrdemProducaoUpdateView.as_view(), name='ordem_edit'),
+    path('ordens/<int:pk>/excluir/', OrdemProducaoDeleteView.as_view(), name='ordem_delete'),
 ]

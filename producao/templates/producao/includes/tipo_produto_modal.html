@@ -1,0 +1,56 @@
+{% load widget_tweaks %}
+
+<form id="tipoProdutoForm" method="post">
+    {% csrf_token %}
+    
+    <div class="modal-body">
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger" role="alert">
+            {% for error in form.non_field_errors %}
+            {{ error }}
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="mb-3">
+            <label for="id_nome" class="form-label fw-bold">Nome <span class="text-danger">*</span></label>
+            {% render_field form.nome class="form-control" placeholder="Nome do tipo de produto" %}
+            {% if form.nome.errors %}
+            <div class="invalid-feedback d-block">{{ form.nome.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="mb-3">
+            <label for="id_descricao" class="form-label fw-bold">Descrição</label>
+            {% render_field form.descricao class="form-control" placeholder="Descrição do tipo de produto" rows="2" %}
+            {% if form.descricao.errors %}
+            <div class="invalid-feedback d-block">{{ form.descricao.errors }}</div>
+            {% endif %}
+        </div>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label for="id_icone" class="form-label fw-bold">Ícone</label>
+                {% render_field form.icone class="form-control" placeholder="bi-box" %}
+                <small class="form-text text-muted">Nome do ícone Bootstrap, ex: bi-box</small>
+                {% if form.icone.errors %}
+                <div class="invalid-feedback d-block">{{ form.icone.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-6 mb-3">
+                <label for="id_cor" class="form-label fw-bold">Cor</label>
+                {% render_field form.cor class="form-control" %}
+                <small class="form-text text-muted">Nome da cor Bootstrap: primary, success, etc</small>
+                {% if form.cor.errors %}
+                <div class="invalid-feedback d-block">{{ form.cor.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Salvar</button>
+    </div>
+</form>

@@ -184,6 +184,11 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <!-- Dados para o gráfico (ocultos) -->
+                    <div style="display: none;">
+                        <div id="meses">{{ meses|safe }}</div>
+                        <div id="quantidades">{{ quantidades|safe }}</div>
+                    </div>
                     <div class="chart-area">
                         <canvas id="producaoChart" height="300"></canvas>
                     </div>
@@ -288,9 +293,22 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Gráfico de produção mensal
-        const meses = JSON.parse(document.getElementById('meses')?.textContent || '["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"]');
-        const quantidades = JSON.parse(document.getElementById('quantidades')?.textContent || '[0, 0, 0, 0, 0, 0]');
+        const mesesElement = document.getElementById('meses');
+        const quantidadesElement = document.getElementById('quantidades');
+        
+        // Verificar se os elementos existem e contêm os dados
+        const meses = mesesElement && mesesElement.textContent ? 
+            JSON.parse(mesesElement.textContent.replace(/'/g, '"')) : 
+            ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"];
+            
+        const quantidades = quantidadesElement && quantidadesElement.textContent ? 
+            JSON.parse(quantidadesElement.textContent) : 
+            [0, 0, 0, 0, 0, 0];
+            
         const ctx = document.getElementById('producaoChart').getContext('2d');
+        
+        // Console para debug
+        console.log("Dados do gráfico:", { meses, quantidades });
         
         new Chart(ctx, {
             type: 'bar',

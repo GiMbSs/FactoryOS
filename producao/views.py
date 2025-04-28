@@ -1,14 +1,14 @@
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
-from core.views import registrar_log
+from core.views import registrar_log, LoggingMixin
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy as _
-from django.http import HttpResponse
-from django.template.loader import get_template
+from django.http import HttpResponse, JsonResponse
+from django.template.loader import get_template, render_to_string
 from xhtml2pdf import pisa
 from rest_framework import viewsets
-from .models import OrdemProducao, Produto, MateriaPrima
-from .forms import OrdemProducaoForm, ProdutoForm, MateriaPrimaForm
+from .models import OrdemProducao, Produto, MateriaPrima, TipoProduto
+from .forms import OrdemProducaoForm, ProdutoForm, MateriaPrimaForm, TipoProdutoForm
 from .serializers import (
     ProdutoSerializer,
     MateriaPrimaSerializer,
@@ -16,6 +16,14 @@ from .serializers import (
 )
 import logging
 from datetime import datetime, timedelta
+from django.db import models
+from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import login_required
+
+# Importar views dos módulos reorganizados para manter compatibilidade
+from .views.produtos import *
+from .views.materias_primas import *
+from .views.ordens import *
 
 class MateriaPrimaViewSet(viewsets.ModelViewSet):
     queryset = MateriaPrima.objects.all()
@@ -42,37 +50,34 @@ class ProdutoListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Adiciona contagens por tipo de produto
-        context['total_produtos'] = Produto.objects.count()
-        context['produtos_madeira'] = Produto.objects.filter(tipo='MADEIRA').count()
-        context['produtos_plastico'] = Produto.objects.filter(tipo='PLASTICO').count()
-        context['produtos_tecido'] = Produto.objects.filter(tipo='TECIDO').count()
-        context['produtos_misto'] = Produto.objects.filter(tipo='MISTO').count()
+        # Usa o serviço para obter estatísticas de forma mais organizada
+        from .services import EstatisticasService
+        estatisticas = EstatisticasService.obter_estatisticas_produto()
         
-        # Adiciona estatísticas adicionais
-        from django.utils import timezone
-        from django.db.models import Avg
+        # Adiciona contagens por tipo de produto
+        context['total_produtos'] = estatisticas['total_produtos']
+        context['produtos_madeira'] = estatisticas['produtos_por_tipo']['madeira']
+        context['produtos_plastico'] = estatisticas['produtos_por_tipo']['plastico']
+        context['produtos_tecido'] = estatisticas['produtos_por_tipo']['tecido']
+        context['produtos_misto'] = estatisticas['produtos_por_tipo']['misto']
         
         # Custo médio dos produtos
-        produtos = Produto.objects.all()
-        total_custo = 0
-        for produto in produtos:
-            total_custo += produto.calcular_custo()
-        
-        if produtos.count() > 0:
-            context['custo_medio'] = total_custo / produtos.count()
-        else:
-            context['custo_medio'] = 0
+        context['custo_medio'] = estatisticas['custo_medio']
             
         return context
 
 from .forms import ProdutoMateriaPrimaFormSet
 
-class ProdutoCreateView(LoginRequiredMixin, CreateView):
+class ProdutoCreateView(LoginRequiredMixin, LoggingMixin, CreateView):
     model = Produto
     form_class = ProdutoForm
     template_name = 'producao/cadastro_produto.html'
     success_url = reverse_lazy('producao:produto_list')
+    
+    # Configurações para o LoggingMixin
+    log_module = 'Produção'
+    log_create_message = "Cadastrou novo produto: {}"
+    success_message = "Produto cadastrado com sucesso!"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -89,15 +94,24 @@ class ProdutoCreateView(LoginRequiredMixin, CreateView):
             self.object = form.save()
             materias_formset.instance = self.object
             materias_formset.save()
-            registrar_log(self.request, 'Produção', f'Cadastrou novo produto: {self.object.nome}')
+            # O registro de log será feito pelo LoggingMixin
             return super().form_valid(form)
         else:
             return self.form_invalid(form)
 
-class ProdutoUpdateView(LoginRequiredMixin, UpdateView):
+class ProdutoUpdateView(LoginRequiredMixin, LoggingMixin, UpdateView):
+    model = Produto
+    form_class = ProdutoForm
+    template_name = 'producao/cadastro_produto.html'
+    success_url = reverse_lazy('producao:produto_list')
+    
+    # Configurações para o LoggingMixin
+    log_module = 'Produção'
+    log_update_message = "Editou produto: {}"
+    success_message = "Produto atualizado com sucesso!"
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        from .forms import ProdutoMateriaPrimaFormSet
         if self.request.POST:
             context['materias_formset'] = ProdutoMateriaPrimaFormSet(self.request.POST, instance=self.object)
         else:
@@ -111,25 +125,20 @@ class ProdutoUpdateView(LoginRequiredMixin, UpdateView):
             self.object = form.save()
             materias_formset.instance = self.object
             materias_formset.save()
-            registrar_log(self.request, 'Produção', f'Editou produto: {self.object.nome}')
+            # O registro de log será feito pelo LoggingMixin
             return super().form_valid(form)
         else:
             return self.form_invalid(form)
-    model = Produto
-    form_class = ProdutoForm
-    template_name = 'producao/cadastro_produto.html'
-    success_url = reverse_lazy('producao:produto_list')
 
-class ProdutoDeleteView(LoginRequiredMixin, DeleteView):
-    def delete(self, request, *args, **kwargs):
-        obj = self.get_object()
-        response = super().delete(request, *args, **kwargs)
-        registrar_log(request, 'Produção', f'Excluiu produto: {obj.nome}')
-        messages.success(self.request, 'Produto excluído com sucesso!')
-        return response
+class ProdutoDeleteView(LoginRequiredMixin, LoggingMixin, DeleteView):
     model = Produto
     template_name = 'producao/confirmar_exclusao_produto.html'
     success_url = reverse_lazy('producao:produto_list')
+    
+    # Configurações para o LoggingMixin
+    log_module = 'Produção'
+    log_delete_message = "Excluiu produto: {}"
+    success_message = "Produto excluído com sucesso!"
 
 class MateriaPrimaListView(LoginRequiredMixin, ListView):
     model = MateriaPrima
@@ -170,38 +179,39 @@ class MateriaPrimaListView(LoginRequiredMixin, ListView):
         
         return context
 
-class MateriaPrimaCreateView(LoginRequiredMixin, CreateView):
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        registrar_log(self.request, 'Produção', f'Cadastrou nova matéria-prima: {self.object.nome}')
-        return response
+class MateriaPrimaCreateView(LoginRequiredMixin, LoggingMixin, CreateView):
     model = MateriaPrima
     form_class = MateriaPrimaForm
     template_name = 'producao/cadastro_materiaprima.html'
     success_url = reverse_lazy('producao:materiaprima_list')
+    
+    # Configurações para o LoggingMixin
+    log_module = 'Produção'
+    log_create_message = "Cadastrou nova matéria-prima: {}"
+    success_message = "Matéria-prima cadastrada com sucesso!"
 
-class MateriaPrimaUpdateView(LoginRequiredMixin, UpdateView):
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        registrar_log(self.request, 'Produção', f'Editou matéria-prima: {self.object.nome}')
-        return response
+class MateriaPrimaUpdateView(LoginRequiredMixin, LoggingMixin, UpdateView):
     model = MateriaPrima
     form_class = MateriaPrimaForm
     template_name = 'producao/cadastro_materiaprima.html'
     success_url = reverse_lazy('producao:materiaprima_list')
+    
+    # Configurações para o LoggingMixin
+    log_module = 'Produção'
+    log_update_message = "Editou matéria-prima: {}"
+    success_message = "Matéria-prima atualizada com sucesso!"
 
-class MateriaPrimaDeleteView(LoginRequiredMixin, DeleteView):
-    def delete(self, request, *args, **kwargs):
-        obj = self.get_object()
-        response = super().delete(request, *args, **kwargs)
-        registrar_log(request, 'Produção', f'Excluiu matéria-prima: {obj.nome}')
-        messages.success(self.request, 'Matéria-prima excluída com sucesso!')
-        return response
+class MateriaPrimaDeleteView(LoginRequiredMixin, LoggingMixin, DeleteView):
     model = MateriaPrima
     template_name = 'producao/confirmar_exclusao_materiaprima.html'
     success_url = reverse_lazy('producao:materiaprima_list')
+    
+    # Configurações para o LoggingMixin
+    log_module = 'Produção'
+    log_delete_message = "Excluiu matéria-prima: {}"
+    success_message = "Matéria-prima excluída com sucesso!"
 
-class DashboardView(ListView):
+class DashboardView(LoginRequiredMixin, ListView):
     template_name = 'producao/dashboard.html'
     model = OrdemProducao
     context_object_name = 'ordens_andamento'
@@ -225,8 +235,10 @@ class DashboardView(ListView):
                 status='FINALIZADA'
             ).count())
         
-        context['meses'] = meses
-        context['quantidades'] = quantidades
+        # Serializar os dados como JSON para o gráfico
+        import json
+        context['meses'] = json.dumps(meses)
+        context['quantidades'] = json.dumps(quantidades)
 
         # Totais do mês atual
         now = datetime.now()
@@ -243,22 +255,29 @@ class DashboardView(ListView):
             status='FINALIZADA'
         ).count() or 0
 
-        # Alertas de estoque
-        from estoque.models import SaldoEstoque
+        # Alertas de estoque usando o serviço
+        from .services import EstoqueService
+        saldos_alerta = EstoqueService.obter_alertas_estoque()
+        
+        # Formata os dados para o template
         context['alertas_estoque'] = [
             {
                 'materia_prima': saldo.materia_prima.nome,
                 'quantidade_atual': saldo.quantidade_atual,
                 'unidade_medida': saldo.materia_prima.unidade_medida,
-                'estoque_minimo': round(saldo.materia_prima.estoque_minimo if saldo.materia_prima.estoque_minimo > 0 else saldo.calcular_estoque_minimo(), 2)
+                'estoque_minimo': round(
+                    saldo.materia_prima.estoque_minimo 
+                    if saldo.materia_prima.estoque_minimo > 0 
+                    else saldo.calcular_estoque_minimo(), 
+                    2
+                )
             }
-            for saldo in SaldoEstoque.objects.all()
-            if saldo.quantidade_atual < (saldo.materia_prima.estoque_minimo if saldo.materia_prima.estoque_minimo > 0 else saldo.calcular_estoque_minimo())
+            for saldo in saldos_alerta
         ]
         
         return context
 
-class OrdemProducaoListView(ListView):
+class OrdemProducaoListView(LoginRequiredMixin, ListView):
     model = OrdemProducao
     template_name = 'producao/ordemproducao_list.html'
     paginate_by = 10
@@ -293,18 +312,23 @@ class OrdemProducaoListView(ListView):
         
         return context
 
-class OrdemProducaoCreateView(CreateView):
+class OrdemProducaoCreateView(LoginRequiredMixin, LoggingMixin, CreateView):
     model = OrdemProducao
     form_class = OrdemProducaoForm
     template_name = 'producao/ordemproducao_form.html'
     success_url = reverse_lazy('producao:lista_ordens')
+    
+    # Configurações para o LoggingMixin
+    log_module = 'Produção'
+    log_create_message = "Criou ordem de produção: {}"
+    success_message = "Ordem de produção criada com sucesso!"
 
     def form_valid(self, form):
         response = super().form_valid(form)
         logger.info(f"Nova ordem de produção criada: {self.object}")
         return response
 
-class OrdemProducaoDetailView(DetailView):
+class OrdemProducaoDetailView(LoginRequiredMixin, DetailView):
     model = OrdemProducao
     template_name = 'producao/ordemproducao_detail.html'
 
@@ -331,3 +355,83 @@ class OrdemProducaoDetailView(DetailView):
             return response
         
         return super().render_to_response(context, **response_kwargs)
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def tipo_produto_modal(request):
+    """View para criar ou editar um tipo de produto em um modal."""
+    tipo_id = request.GET.get('id')
+    
+    if (tipo_id):
+        tipo = TipoProduto.objects.get(id=tipo_id)
+        title = f"Editar Tipo: {tipo.nome}"
+    else:
+        tipo = None
+        title = "Novo Tipo de Produto"
+    
+    if request.method == "POST":
+        form = TipoProdutoForm(request.POST, instance=tipo)
+        if form.is_valid():
+            tipo = form.save()
+            return JsonResponse({
+                'success': True,
+                'id': tipo.id,
+                'nome': tipo.nome,
+                'message': f"Tipo de produto '{tipo.nome}' salvo com sucesso."
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'errors': form.errors.as_json()
+            })
+    else:
+        form = TipoProdutoForm(instance=tipo)
+    
+    html = render_to_string('producao/includes/tipo_produto_modal.html', {
+        'form': form,
+        'tipo': tipo,
+        'title': title
+    }, request=request)
+    
+    return JsonResponse({
+        'html': html,
+        'title': title
+    })
+
+
+# Adicionar API para obter unidade de medida de uma matéria-prima
+@login_required
+def get_materia_prima_info(request, materia_prima_id):
+    """Retorna informações da matéria-prima para uso via AJAX"""
+    try:
+        materia_prima = MateriaPrima.objects.get(id=materia_prima_id)
+        
+        # Determina a unidade de medida a partir do relacionamento ou do campo legacy
+        unidade_sigla = None
+        if materia_prima.unidade:
+            unidade_sigla = materia_prima.unidade.sigla
+        else:
+            # Mapeia os valores antigos para siglas sensíveis
+            mapeamento_unidades = {
+                'KG': 'kg',
+                'METRO': 'm',
+                'UNIDADE': 'un',
+            }
+            unidade_sigla = mapeamento_unidades.get(materia_prima.unidade_medida, 'un')
+        
+        return JsonResponse({
+            'success': True,
+            'unidade': unidade_sigla,
+            'nome': materia_prima.nome,
+            'custo': float(materia_prima.custo_unitario)
+        })
+    except MateriaPrima.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Matéria-prima não encontrada'
+        }, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
