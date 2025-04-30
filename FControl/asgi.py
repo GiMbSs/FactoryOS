@@ -1,5 +1,5 @@
 """
-ASGI config for coffee_filter_factory project.
+ASGI config for FControl project.
 
 It exposes the ASGI callable as a module-level variable named ``application``.
 
@@ -11,6 +11,6 @@ import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'coffee_filter_factory.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'FControl.settings')
 
 application = get_asgi_application()
