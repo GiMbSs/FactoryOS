@@ -1,7 +1,30 @@
 from django.urls import path, include
-from .views.ordens import OrdemProducaoUpdateView, OrdemProducaoDeleteView
-# Importação simples do módulo views
-from .views import *
+
+from producao.views.dashboard import DashboardView
+from producao.views.produtos import (
+    ProdutoListView, 
+    ProdutoCreateView, 
+    ProdutoUpdateView, 
+    ProdutoDeleteView
+)
+from producao.views.materias_primas import (
+    MateriaPrimaListView, 
+    MateriaPrimaCreateView, 
+    MateriaPrimaUpdateView, 
+    MateriaPrimaDeleteView
+)
+from producao.views.ordens import (
+    OrdemProducaoListView,
+    OrdemProducaoCreateView,
+    OrdemProducaoDetailView,
+    OrdemProducaoUpdateView,
+    OrdemProducaoDeleteView
+)
+from producao.views.auxiliar import (
+    tipo_produto_modal,
+    tipo_materia_prima_modal,
+    get_materia_prima_info
+)
 
 app_name = 'producao'
 

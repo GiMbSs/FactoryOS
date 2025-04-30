@@ -1,19 +1,46 @@
 from django.urls import path
-from .views import DashboardView, ClienteListView, ClienteCreateView, ClienteUpdateView, VendaCreateView, VendaUpdateView, VendaListView, VendaDeleteView, FornecedorListView, FornecedorCreateView, ToggleClienteView, VendaUpdateStatusView
+from comercial.views.dashboard import DashboardView
+from comercial.views.cliente_views import (
+    ClienteListView, 
+    ClienteCreateView, 
+    ClienteUpdateView, 
+    ClienteDeleteView, 
+    ToggleClienteView
+)
+from comercial.views.fornecedor_views import (
+    FornecedorListView, 
+    FornecedorCreateView,
+    FornecedorUpdateView,
+    FornecedorDeleteView
+)
+from comercial.views.venda_views import (
+    VendaListView,
+    VendaCreateView,
+    VendaUpdateView,
+    VendaDeleteView,
+    VendaUpdateStatusView
+)
 
 app_name = 'comercial'
 
 urlpatterns = [
+    # Dashboard
+    path('', DashboardView.as_view(), name='dashboard'),
+    
+    # Fornecedores
     path('fornecedores/', FornecedorListView.as_view(), name='lista_fornecedores'),
     path('fornecedores/novo/', FornecedorCreateView.as_view(), name='cadastro_fornecedor'),
-    path('fornecedores/<int:pk>/editar/', __import__('comercial.views_fornecedor_editdelete').views_fornecedor_editdelete.FornecedorUpdateView.as_view(), name='editar_fornecedor'),
-    path('fornecedores/<int:pk>/excluir/', __import__('comercial.views_fornecedor_editdelete').views_fornecedor_editdelete.FornecedorDeleteView.as_view(), name='excluir_fornecedor'),
-    path('', DashboardView.as_view(), name='dashboard'),
+    path('fornecedores/<int:pk>/editar/', FornecedorUpdateView.as_view(), name='editar_fornecedor'),
+    path('fornecedores/<int:pk>/excluir/', FornecedorDeleteView.as_view(), name='excluir_fornecedor'),
+    
+    # Clientes
     path('clientes/', ClienteListView.as_view(), name='lista_clientes'),
-    path('clientes/<int:pk>/editar/', ClienteUpdateView.as_view(), name='editar_cliente'),
-    path('clientes/<int:pk>/excluir/', __import__('comercial.views_cliente_delete').views_cliente_delete.ClienteDeleteView.as_view(), name='excluir_cliente'),
-    path('clientes/<int:pk>/toggle/', ToggleClienteView.as_view(), name='toggle_cliente'),
     path('clientes/novo/', ClienteCreateView.as_view(), name='cadastro_cliente'),
+    path('clientes/<int:pk>/editar/', ClienteUpdateView.as_view(), name='editar_cliente'),
+    path('clientes/<int:pk>/excluir/', ClienteDeleteView.as_view(), name='excluir_cliente'),
+    path('clientes/<int:pk>/toggle/', ToggleClienteView.as_view(), name='toggle_cliente'),
+    
+    # Pedidos/Vendas
     path('pedidos/', VendaListView.as_view(), name='pedido_list'),
     path('pedidos/novo/', VendaCreateView.as_view(), name='pedido_create'),
     path('pedidos/<int:pk>/editar/', VendaUpdateView.as_view(), name='pedido_edit'),

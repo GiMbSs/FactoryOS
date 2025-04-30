@@ -34,11 +34,9 @@ class ProdutoListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # Busca estatísticas através do service layer
         from ..services import EstatisticasService
         estatisticas = EstatisticasService.obter_estatisticas_produto()
         
-        # Adiciona indicadores ao contexto
         context['total_produtos'] = estatisticas['total_produtos']
         context['produtos_madeira'] = estatisticas['produtos_por_tipo']['madeira']
         context['produtos_plastico'] = estatisticas['produtos_por_tipo']['plastico']
@@ -52,7 +50,6 @@ class ProdutoListView(LoginRequiredMixin, ListView):
 class ProdutoCreateView(LoginRequiredMixin, LoggingMixin, CreateView):
     """
     Criação de produtos com suas matérias-primas associadas.
-    Utiliza um formset para gerenciar as relações com matérias-primas.
     """
     model = Produto
     form_class = ProdutoForm
@@ -134,7 +131,6 @@ class ProdutoDeleteView(LoginRequiredMixin, LoggingMixin, DeleteView):
 def tipo_produto_modal(request):
     """
     Gerencia tipos de produto em uma janela modal.
-    Permite criar ou editar tipos sem sair da tela de cadastro de produtos.
     """
     tipo_id = request.GET.get('id')
     
