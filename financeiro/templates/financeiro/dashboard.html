@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard Financeiro{% endblock %}
+{% block title %}{{ system_title }} - Dashboard Financeiro{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
@@ -250,30 +250,6 @@
         </div>
     </div>
 
-    <!-- Gráficos -->
-    <div class="row mb-4">
-        <div class="col-md-6 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-cash-stack"></i> Situação Contas a Pagar</h6>
-                </div>
-                <div class="card-body">
-                    <canvas id="graficoPagar" height="250"></canvas>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <h6 class="m-0 font-weight-bold text-primary"><i class="bi bi-cash"></i> Situação Contas a Receber</h6>
-                </div>
-                <div class="card-body">
-                    <canvas id="graficoReceber" height="250"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Fluxo de Caixa Detalhado -->
     <div class="row">
         <div class="col-md-12">
@@ -325,14 +301,10 @@
                                 <tr class="table-secondary">
                                     <td colspan="2" class="fw-bold"><i class="bi bi-calculator me-2"></i> SALDOS</td>
                                 </tr>
-                                {% with total_entradas=valor_receber_recebido|add:valor_vendas_finalizadas %}
-                                {% with saldo_atual=total_entradas|add:'-'|add:valor_pagar_pago %}
-                                <tr class="{% if saldo_atual >= 0 %}table-success{% else %}table-danger{% endif %}">
+                                <tr class="{% if saldo >= 0 %}table-success{% else %}table-danger{% endif %}">
                                     <td><i class="bi bi-calculator me-2"></i> Saldo atual</td>
-                                    <td class="text-end fw-bold">{{ saldo_atual|floatformat:2 }}</td>
+                                    <td class="text-end fw-bold">{{ saldo|floatformat:2 }}</td>
                                 </tr>
-                                {% endwith %}
-                                {% endwith %}
                                 
                                 <!-- Seção de Previsões -->
                                 <tr class="table-secondary">
@@ -346,16 +318,10 @@
                                     <td><i class="bi bi-hourglass-split text-warning me-2"></i> Total a pagar pendente</td>
                                     <td class="text-end fw-bold">{{ valor_pagar_pendente|floatformat:2 }}</td>
                                 </tr>
-                                {% with total_entradas=valor_receber_recebido|add:valor_vendas_finalizadas %}
-                                {% with saldo_atual=total_entradas|add:'-'|add:valor_pagar_pago %}
-                                {% with saldo_previsto=saldo_atual|add:valor_receber_pendente|add:'-'|add:valor_pagar_pendente %}
                                 <tr class="{% if saldo_previsto >= 0 %}table-success{% else %}table-danger{% endif %}">
                                     <td><i class="bi bi-calculator me-2"></i> Saldo previsto</td>
                                     <td class="text-end fw-bold">{{ saldo_previsto|floatformat:2 }}</td>
                                 </tr>
-                                {% endwith %}
-                                {% endwith %}
-                                {% endwith %}
                             </tbody>
                         </table>
                     </div>
@@ -368,53 +334,7 @@
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Configuração dos gráficos
-    const graficoPagar = document.getElementById('graficoPagar').getContext('2d');
-    new Chart(graficoPagar, {
-        type: 'doughnut',
-        data: {
-            labels: JSON.parse(document.getElementById('labelsPagar').textContent),
-            datasets: [{
-                data: JSON.parse(document.getElementById('dataPagar').textContent),
-                backgroundColor: ['#3b7ddd', '#3cbc8d', '#e74c3c'],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                }
-            },
-            cutout: '60%'
-        }
-    });
-
-    const graficoReceber = document.getElementById('graficoReceber').getContext('2d');
-    new Chart(graficoReceber, {
-        type: 'doughnut',
-        data: {
-            labels: JSON.parse(document.getElementById('labelsReceber').textContent),
-            datasets: [{
-                data: JSON.parse(document.getElementById('dataReceber').textContent),
-                backgroundColor: ['#3b7ddd', '#3cbc8d', '#e74c3c'],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                }
-            },
-            cutout: '60%'
-        }
-    });
-    
+    // Configuração dos gráficos    
     // Gráfico de vendas mensais
     const graficoVendasMensal = document.getElementById('graficoVendasMensal').getContext('2d');
     new Chart(graficoVendasMensal, {
@@ -467,10 +387,6 @@
 </script>
 
 <!-- Dados para os gráficos -->
-<script id="labelsPagar" type="application/json">{{ grafico_pagar.labels|safe }}</script>
-<script id="dataPagar" type="application/json">{{ grafico_pagar.data|safe }}</script>
-<script id="labelsReceber" type="application/json">{{ grafico_receber.labels|safe }}</script>
-<script id="dataReceber" type="application/json">{{ grafico_receber.data|safe }}</script>
 <script id="labelsVendasMensal" type="application/json">{{ grafico_vendas_mensal.labels|safe }}</script>
 <script id="dataVendasMensal" type="application/json">{{ grafico_vendas_mensal.data|safe }}</script>
 {% endblock %}

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import MovimentacaoEstoque, SaldoEstoque
+from .models import MovimentacaoEstoque, SaldoEstoque, ProdutoEstoque
 
 @admin.register(MovimentacaoEstoque)
 class MovimentacaoEstoqueAdmin(admin.ModelAdmin):
@@ -25,3 +25,11 @@ class SaldoEstoqueAdmin(admin.ModelAdmin):
     list_filter = ('ultima_atualizacao',)
     readonly_fields = ('ultima_atualizacao',)
     ordering = ('materia_prima',)
+
+@admin.register(ProdutoEstoque)
+class ProdutoEstoqueAdmin(admin.ModelAdmin):
+    list_display = ('produto', 'quantidade_atual', 'ultima_atualizacao')
+    search_fields = ('produto__nome', 'produto__codigo_sku')
+    list_filter = ('ultima_atualizacao',)
+    readonly_fields = ('ultima_atualizacao',)
+    ordering = ('produto',)

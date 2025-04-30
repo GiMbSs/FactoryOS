@@ -42,6 +42,9 @@ class DashboardView(ListView):
         total_saidas = (context['valor_pagar_pago'] or 0)
         context['saldo'] = total_entradas - total_saidas
         
+        # Cálculo do saldo previsto: saldo atual + contas a receber pendentes - contas a pagar pendentes
+        context['saldo_previsto'] = context['saldo'] + context['valor_receber_pendente'] - context['valor_pagar_pendente']
+        
         context['vendas_finalizadas_mes'] = Venda.objects.filter(
             status='FECHADA',
             data_venda__month=mes_atual,

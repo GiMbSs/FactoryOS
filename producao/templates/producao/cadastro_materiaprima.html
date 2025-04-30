@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
 
-{% block title %}{% if form.instance.pk %}Editar Matéria-Prima{% else %}Nova Matéria-Prima{% endif %}{% endblock %}
+{% block title %}{% if form.instance.pk %}{{ system_title }} - Editar Matéria-Prima{% else %}{{ system_title }} - Nova Matéria-Prima{% endif %}{% endblock %}
 
 {% block extra_head %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
@@ -107,14 +107,30 @@ $(document).ready(function() {
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="id_custo_unitario" class="form-label fw-bold">Custo Unitário (R$) <span class="text-danger">*</span></label>
-                                {% render_field form.custo_unitario class="form-control" placeholder="0,00" %}
+                                <div class="input-group">
+                                    {% render_field form.custo_unitario class="form-control" placeholder="0,00" min="0" step="0.01" style="min-width: 100px;" %}
+                                    <span class="input-group-text" style="min-width: 45px; text-align: center;">R$</span>
+                                </div>
                                 {% if form.custo_unitario.errors %}
                                 <div class="invalid-feedback d-block">{{ form.custo_unitario.errors }}</div>
                                 {% endif %}
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="id_estoque_minimo" class="form-label fw-bold">Estoque Mínimo <span class="text-danger">*</span></label>
-                                {% render_field form.estoque_minimo class="form-control" placeholder="0,00" %}
+                                <div class="input-group">
+                                    {% render_field form.estoque_minimo class="form-control" placeholder="0,00" min="0" step="0.01" style="min-width: 100px;" %}
+                                    <span class="input-group-text unidade-medida" style="min-width: 45px; text-align: center;">
+                                        {% if form.instance.unidade %}
+                                            {{ form.instance.unidade.sigla }}
+                                        {% elif form.instance.unidade_medida %}
+                                            {% with unidade=form.instance.unidade_medida %}
+                                                {% if unidade == "UNIDADE" %}un{% elif unidade == "METRO" %}m{% elif unidade == "KG" %}kg{% else %}{{ unidade }}{% endif %}
+                                            {% endwith %}
+                                        {% else %}
+                                            un
+                                        {% endif %}
+                                    </span>
+                                </div>
                                 {% if form.estoque_minimo.errors %}
                                 <div class="invalid-feedback d-block">{{ form.estoque_minimo.errors }}</div>
                                 {% endif %}
@@ -167,6 +183,14 @@ $(document).ready(function() {
                             <li class="list-group-item px-0"><i class="bi bi-rulers me-2"></i> m - Metro</li>
                             <li class="list-group-item px-0"><i class="bi bi-rulers me-2"></i> m² - Metro quadrado</li>
                         </ul>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6 class="fw-bold">Valores Fracionários</h6>
+                        <p class="small text-muted">Para estoque mínimo e custos unitários, você pode utilizar valores fracionários (como 0,5 Kg ou 0,25 metros).</p>
+                        <div class="alert alert-info py-2">
+                            <i class="bi bi-lightbulb me-2"></i> Use vírgula como separador decimal: <strong>0,5</strong> para meio metro, <strong>0,25</strong> para um quarto.
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n widget_tweaks %}
 
-{% block title %}{% if form.instance.pk %}Editar Ordem #{{ form.instance.pk }}{% else %}Nova Ordem de Produção{% endif %}{% endblock %}
+{% block title %}{% if form.instance.pk %}{{ system_title }} - Editar Ordem #{{ form.instance.pk }}{% else %}{{ system_title }} - Nova Ordem de Produção{% endif %}{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">

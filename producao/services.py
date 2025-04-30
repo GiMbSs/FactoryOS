@@ -1,8 +1,10 @@
 from decimal import Decimal, ROUND_HALF_UP
 from django.db.models import Sum, F, ExpressionWrapper, DecimalField
 from django.conf import settings
+from .models import ConfiguracaoCustoMaoObra
 
 # Valores configuráveis que poderiam estar no settings.py
+# Mantemos como fallback, mas agora utilizaremos o modelo ConfiguracaoCustoMaoObra
 CUSTO_MAO_OBRA = getattr(settings, 'CUSTO_MAO_OBRA', {
     'PLASTICO': Decimal('2.50'),
     'MADEIRA': Decimal('4.00'),
@@ -32,8 +34,11 @@ class ProdutoService:
         if not isinstance(custo_materias, Decimal):
             custo_materias = Decimal(str(custo_materias))
             
-        # Usa o mapeamento de custos de mão de obra ou um valor padrão
-        mao_obra = CUSTO_MAO_OBRA.get(produto.tipo, Decimal('3.50'))
+        # Usa o modelo de configuração de custo de mão de obra, com fallback para o mapeamento antigo
+        mao_obra = ConfiguracaoCustoMaoObra.get_custo(
+            produto.tipo, 
+            CUSTO_MAO_OBRA.get(produto.tipo, Decimal('0.80'))
+        )
         
         custo_total = custo_materias + mao_obra
         custo_indireto = custo_total * PERCENTUAL_CUSTO_INDIRETO

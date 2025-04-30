@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
 
-{% block title %}{% if form.instance.pk %}Editar Produto{% else %}Novo Produto{% endif %}{% endblock %}
+{% block title %}{% if form.instance.pk %}{{ system_title }} - Editar Produto{% else %}{{ system_title }} - Novo Produto{% endif %}{% endblock %}
+
+<!-- Filtro para formatar unidades -->
+{% with unidade_map="KG:kg,METRO:m,UNIDADE:un" %}
+{% endwith %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
@@ -125,10 +129,12 @@
                                                     </td>
                                                     <td>
                                                         <div class="input-group">
-                                                            {% render_field form.quantidade_utilizada class="form-control" min="1" %}
-                                                            <span class="input-group-text unidade-medida">
+                                                            {% render_field form.quantidade_utilizada class="form-control" min="0.01" step="0.01" placeholder="0.00" %}
+                                                            <span class="input-group-text unidade-medida" style="min-width: 45px; text-align: center;">
                                                                 {% if form.instance.materia_prima %}
-                                                                    {{ form.instance.materia_prima.unidade_medida|default:"un" }}
+                                                                    {% with unidade=form.instance.materia_prima.unidade_medida|default:"un" %}
+                                                                        {% if unidade == "UNIDADE" %}un{% elif unidade == "METRO" %}m{% elif unidade == "KG" %}kg{% else %}{{ unidade }}{% endif %}
+                                                                    {% endwith %}
                                                                 {% else %}
                                                                     un
                                                                 {% endif %}
@@ -176,8 +182,8 @@
                                         {% if forloop.counter == 2 %}
                                         <td>
                                             <div class="input-group">
-                                                {% render_field field class="form-control" min="1" %}
-                                                <span class="input-group-text unidade-medida">un</span>
+                                                {% render_field field class="form-control" min="0.01" step="0.01" placeholder="0.00" %}
+                                                <span class="input-group-text unidade-medida" style="min-width: 45px; text-align: center;">un</span>
                                             </div>
                                         </td>
                                         {% endif %}
@@ -244,6 +250,14 @@
                             <i class="bi bi-lightbulb me-2"></i> Exemplo: <strong>MOV-0001</strong> para móveis, <strong>ELE-0001</strong> para eletrônicos.
                         </div>
                     </div>
+
+                    <div class="mb-3">
+                        <h6 class="fw-bold">Quantidades Fracionárias</h6>
+                        <p class="small text-muted">Para matérias-primas utilizadas em quantidades fracionárias (como 0,05 metros de tecido), utilize o ponto como separador decimal.</p>
+                        <div class="alert alert-info py-2">
+                            <i class="bi bi-lightbulb me-2"></i> Exemplos: <strong>0.5</strong> para meio metro, <strong>0.25</strong> para um quarto.
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -267,7 +281,25 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Inicializando o formulário de produto com script melhorado...');
+    console.log('Inicializando o formulário de produto com suporte a quantidades fracionárias...');
+    
+    // Função para formatar valores decimais
+    function formatarQuantidade(input) {
+        input.addEventListener('blur', function() {
+            if (this.value) {
+                // Garante formato decimal com até 4 casas decimais
+                const valor = parseFloat(this.value);
+                if (!isNaN(valor)) {
+                    this.value = valor.toFixed(4).replace(/\.?0+$/, '');
+                }
+            }
+        });
+    }
+    
+    // Aplicar formatação aos campos existentes
+    document.querySelectorAll('input[name$="-quantidade_utilizada"]').forEach(input => {
+        formatarQuantidade(input);
+    });
     
     // Função para atualizar a unidade de medida ao selecionar uma matéria-prima
     function setupMateriaPrimaSelectChange(select) {
@@ -373,6 +405,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Configurar o select de matéria-prima
                 const newSelect = lastRow.querySelector('.materia-prima-select');
                 setupMateriaPrimaSelectChange(newSelect);
+                
+                // Aplicar formatação para o novo campo de quantidade
+                const quantidadeInput = lastRow.querySelector('input[name$="-quantidade_utilizada"]');
+                if (quantidadeInput) {
+                    formatarQuantidade(quantidadeInput);
+                }
             }
             
             console.log('Nova matéria-prima adicionada com sucesso!');

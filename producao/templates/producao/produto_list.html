@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load i18n %}
 
-{% block title %}Produtos{% endblock %}
+{% block title %}{{ system_title }} - Produtos{% endblock %}
 
 {% block breadcrumbs %}
 <nav aria-label="breadcrumb">
@@ -153,9 +153,9 @@
                             <td>{{ produto.materias_primas.count }}</td>
                             <td>
                                 <div class="btn-group">
-                                    <a href="#" class="btn btn-sm btn-info" title="Detalhes">
+                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#detalhesModal{{ produto.pk }}" title="Detalhes">
                                         <i class="bi bi-eye"></i>
-                                    </a>
+                                    </button>
                                     <a href="{% url 'producao:produto_update' produto.pk %}" class="btn btn-sm btn-primary" title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </a>
@@ -179,6 +179,57 @@
         </div>
     </div>
 </div>
+
+<!-- Modais de detalhes para cada produto -->
+{% for produto in produtos %}
+<div class="modal fade" id="detalhesModal{{ produto.pk }}" tabindex="-1" aria-labelledby="detalhesModalLabel{{ produto.pk }}" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detalhesModalLabel{{ produto.pk }}">Detalhes do Produto: {{ produto.nome }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Informações Gerais</h6>
+                        <p><strong>Nome:</strong> {{ produto.nome }}</p>
+                        <p><strong>SKU:</strong> {{ produto.codigo_sku }}</p>
+                        <p><strong>Tipo:</strong> {{ produto.get_tipo_display }}</p>
+                        {% if produto.tipo_produto %}
+                        <p><strong>Tipo de Produto:</strong> {{ produto.tipo_produto.nome }}</p>
+                        {% endif %}
+                        <p><strong>Custo Total:</strong> R$ {{ produto.calcular_custo }}</p>
+                        <p><strong>Descrição:</strong> {{ produto.descricao|default:"Sem descrição" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Composição</h6>
+                        <ul class="list-group">
+                            {% for comp in produto.produtomateriaprima_set.all %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ comp.materia_prima.nome }}
+                                <span class="badge bg-primary rounded-pill">
+                                    {{ comp.quantidade_utilizada }} 
+                                    {% with unidade=comp.materia_prima.unidade_medida %}
+                                        {% if unidade == "UNIDADE" %}un{% elif unidade == "METRO" %}m{% elif unidade == "KG" %}kg{% else %}{{ unidade }}{% endif %}
+                                    {% endwith %}
+                                </span>
+                            </li>
+                            {% empty %}
+                            <li class="list-group-item">Nenhuma matéria-prima associada</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <a href="{% url 'producao:produto_update' produto.pk %}" class="btn btn-primary">Editar Produto</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

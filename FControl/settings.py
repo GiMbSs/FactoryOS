@@ -19,7 +19,8 @@ env = environ.Env(
     SECRET_KEY=(str, 'django-insecure-fallback-key-for-development'),
     DEBUG=(bool, True),
     ALLOWED_HOSTS=(list, ['localhost', '127.0.0.1']),
-    TIME_ZONE=(str, 'America/Sao_Paulo')
+    TIME_ZONE=(str, 'America/Sao_Paulo'),
+    SYSTEM_TITLE=(str, 'Coffee Filter Factory')
 )
 
 # Try to read .env file safely
@@ -91,6 +92,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'core.context_processors.system_settings',
             ],
         },
     },
@@ -157,3 +159,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Sistema title configuration
+SYSTEM_TITLE = env('SYSTEM_TITLE', default='Produtos São Lucas')

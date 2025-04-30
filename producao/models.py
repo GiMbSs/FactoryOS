@@ -313,3 +313,55 @@ class OrdemProducao(models.Model):
     def get_absolute_url(self):
         from django.urls import reverse
         return reverse('producao:ordem_detail', kwargs={'pk': self.pk})
+
+class ConfiguracaoCustoMaoObra(models.Model):
+    TIPO_CHOICES = [
+        ('PLASTICO', 'Plástico'),
+        ('MADEIRA', 'Madeira'),
+        ('TECIDO', 'Tecido'),
+        ('MISTO', 'Misto'),
+    ]
+    
+    tipo_produto = models.CharField(
+        'Tipo de Produto', 
+        max_length=10, 
+        choices=TIPO_CHOICES,
+        unique=True
+    )
+    custo_mao_obra = models.DecimalField(
+        'Custo da Mão de Obra', 
+        max_digits=10, 
+        decimal_places=2,
+        validators=[MinValueValidator(0.01)],
+        help_text='Valor do custo da mão de obra por unidade produzida'
+    )
+    descricao = models.TextField('Descrição', blank=True, help_text='Informações adicionais sobre este custo')
+    ultima_atualizacao = models.DateTimeField('Última Atualização', auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Configuração de Custo de Mão de Obra'
+        verbose_name_plural = 'Configurações de Custo de Mão de Obra'
+        ordering = ['tipo_produto']
+    
+    def __str__(self):
+        return f"Custo de Mão de Obra - {self.get_tipo_produto_display()}"
+    
+    @classmethod
+    def get_custo(cls, tipo_produto, valor_padrao=None):
+        """
+        Retorna o custo da mão de obra para um tipo de produto específico
+        
+        Args:
+            tipo_produto: String representando o tipo de produto (PLASTICO, MADEIRA, etc)
+            valor_padrao: Valor padrão caso não exista configuração para o tipo
+            
+        Returns:
+            Decimal: Custo da mão de obra para o tipo de produto
+        """
+        try:
+            config = cls.objects.get(tipo_produto=tipo_produto)
+            return config.custo_mao_obra
+        except cls.DoesNotExist:
+            if valor_padrao is not None:
+                return valor_padrao
+            return 0.80  # Valor padrão caso não haja configuração
