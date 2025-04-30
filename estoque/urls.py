@@ -8,6 +8,10 @@ from estoque.views.materias_primas import (
     MateriaPrimaUpdateView,
     MateriaPrimaDeleteView
 )
+from estoque.views.movimentacoes import (
+    MovimentacaoCreateView,
+    MovimentacaoListView
+)
 
 app_name = 'estoque'
 
@@ -24,4 +28,8 @@ urlpatterns = [
     path('materiaprima/nova/', MateriaPrimaCreateView.as_view(), name='materiaprima_create'),
     path('materiaprima/<int:pk>/editar/', MateriaPrimaUpdateView.as_view(), name='materiaprima_edit'),
     path('materiaprima/<int:pk>/excluir/', MateriaPrimaDeleteView.as_view(), name='materiaprima_delete'),
+    
+    # Movimentações de estoque
+    path('movimentacoes/', MovimentacaoListView.as_view(), name='movimentacoes_list'),
+    path('movimentacoes/nova/', MovimentacaoCreateView.as_view(), name='movimentacao_create'),
 ]

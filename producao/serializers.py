@@ -36,10 +36,11 @@ class ProdutoMateriaPrimaSerializer(serializers.ModelSerializer):
 class ProdutoSerializer(serializers.ModelSerializer):
     custo_producao = serializers.SerializerMethodField()
     materias_primas = serializers.SerializerMethodField()
+    tipo_produto_nome = serializers.CharField(source='tipo_produto.nome', read_only=True)
 
     class Meta:
         model = Produto
-        fields = ['id', 'nome', 'tipo', 'codigo_sku', 'custo_producao', 'materias_primas']
+        fields = ['id', 'nome', 'descricao', 'tipo', 'tipo_produto', 'tipo_produto_nome', 'codigo_sku', 'custo_producao', 'materias_primas']
 
     def get_custo_producao(self, obj):
         return obj.calcular_custo()

@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from decimal import Decimal
 
 class MovimentacaoEstoque(models.Model):
     TIPO_MOVIMENTO = [
@@ -104,8 +105,8 @@ def atualizar_saldo(sender, instance, created, **kwargs):
         )
         
         if instance.tipo_movimento == 'ENTRADA':
-            saldo.quantidade_atual += instance.quantidade
+            saldo.quantidade_atual += Decimal(str(instance.quantidade))
         else:
-            saldo.quantidade_atual -= instance.quantidade
+            saldo.quantidade_atual -= Decimal(str(instance.quantidade))
             
         saldo.save()

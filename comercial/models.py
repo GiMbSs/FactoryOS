@@ -56,7 +56,8 @@ class ItemVenda(models.Model):
         verbose_name_plural = 'Itens de Venda'
 
     def __str__(self):
-        return f"{self.produto} x {self.quantidade}"
+        # Retorna apenas o nome do produto e a quantidade, sem o tipo (que está aparecendo entre parênteses)
+        return f"{self.produto.nome} x {self.quantidade}"
 
 class Venda(models.Model):
     STATUS_CHOICES = [

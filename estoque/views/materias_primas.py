@@ -102,11 +102,26 @@ class MateriaPrimaDeleteView(DeleteView):
             messages.error(request, f'Não é possível excluir a matéria-prima "{materia_prima.nome}" pois existem movimentações de estoque registradas.')
             return redirect('estoque:estoque_list')
         
-        return super().post(request, *args, **kwargs)
-
+        # Armazenar o nome da matéria-prima antes de excluí-la
+        nome_materia = materia_prima.nome
+        
+        # Remover qualquer saldo associado à matéria-prima
+        try:
+            saldo = SaldoEstoque.objects.get(materia_prima=materia_prima)
+            saldo.delete()
+        except SaldoEstoque.DoesNotExist:
+            pass
+        
+        # Excluir a matéria-prima
+        materia_prima.delete()
+        
+        # Registrar no log e adicionar mensagem de sucesso
+        registrar_log(request, 'Estoque', f'Excluiu matéria-prima: {nome_materia}')
+        messages.success(request, f'Matéria-prima "{nome_materia}" excluída com sucesso!')
+        
+        return redirect('estoque:estoque_list')
+    
+    # Sobreescrever o método delete para evitar que seja chamado
     def delete(self, request, *args, **kwargs):
-        obj = self.get_object()
-        response = super().delete(request, *args, **kwargs)
-        registrar_log(request, 'Estoque', f'Excluiu matéria-prima: {obj.nome}')
-        messages.success(request, f'Matéria-prima "{obj.nome}" excluída com sucesso!')
-        return response
+        # Este método não será chamado pois o post acima realiza toda a lógica necessária
+        pass

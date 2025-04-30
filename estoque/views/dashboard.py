@@ -41,14 +41,16 @@ class DashboardView(TemplateView):
         for materia in materias_primas:
             try:
                 saldo = SaldoEstoque.objects.get(materia_prima=materia)
-                quantidade_atual = saldo.quantidade_atual
+                quantidade_atual = float(saldo.quantidade_atual)
             except SaldoEstoque.DoesNotExist:
                 quantidade_atual = 0
-                
+            
+            estoque_minimo = float(materia.estoque_minimo)
+            
             if quantidade_atual <= 0:
                 itens_sem_estoque += 1
                 itens_criticos.append(materia)
-            elif quantidade_atual <= materia.estoque_minimo:
+            elif quantidade_atual < estoque_minimo:
                 itens_abaixo_minimo += 1
                 itens_criticos.append(materia)
         

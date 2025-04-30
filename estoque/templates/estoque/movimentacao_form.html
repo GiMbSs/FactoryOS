@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Nova Movimentação de Estoque{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">{% if form.instance.pk %}Editar{% else %}Nova{% endif %} Movimentação de Estoque</h4>
+        </div>
+        <div class="card-body">
+            <form method="post" class="needs-validation" novalidate>
+                {% csrf_token %}
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.materia_prima.id_for_label }}" class="form-label">Matéria-Prima</label>
+                        {{ form.materia_prima.errors }}
+                        <select name="{{ form.materia_prima.name }}" id="{{ form.materia_prima.id_for_label }}" class="form-select" required>
+                            <option value="">Selecione uma matéria-prima</option>
+                            {% for choice in form.materia_prima.field.choices %}
+                                <option value="{{ choice.0 }}" {% if form.materia_prima.value == choice.0|stringformat:'i' %}selected{% endif %}>
+                                    {{ choice.1 }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.quantidade.id_for_label }}" class="form-label">Quantidade</label>
+                        {{ form.quantidade.errors }}
+                        <input type="number" name="{{ form.quantidade.name }}" id="{{ form.quantidade.id_for_label }}" value="{{ form.quantidade.value|default:'' }}" class="form-control" step="0.01" required>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.tipo_movimento.id_for_label }}" class="form-label">Tipo de Movimento</label>
+                        {{ form.tipo_movimento.errors }}
+                        <select name="{{ form.tipo_movimento.name }}" id="{{ form.tipo_movimento.id_for_label }}" class="form-select" required>
+                            <option value="">Selecione o tipo de movimento</option>
+                            {% for choice in form.tipo_movimento.field.choices %}
+                                <option value="{{ choice.0 }}" {% if form.tipo_movimento.value == choice.0 %}selected{% endif %}>
+                                    {{ choice.1 }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.origem_destino.id_for_label }}" class="form-label">Origem/Destino</label>
+                        {{ form.origem_destino.errors }}
+                        <select name="{{ form.origem_destino.name }}" id="{{ form.origem_destino.id_for_label }}" class="form-select" required>
+                            <option value="">Selecione a origem/destino</option>
+                            {% for choice in form.origem_destino.field.choices %}
+                                <option value="{{ choice.0 }}" {% if form.origem_destino.value == choice.0 %}selected{% endif %}>
+                                    {{ choice.1 }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="{{ form.lote.id_for_label }}" class="form-label">Lote</label>
+                        {{ form.lote.errors }}
+                        <input type="text" name="{{ form.lote.name }}" id="{{ form.lote.id_for_label }}" value="{{ form.lote.value|default:'' }}" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="{{ form.observacao.id_for_label }}" class="form-label">Observação</label>
+                        {{ form.observacao.errors }}
+                        <textarea name="{{ form.observacao.name }}" id="{{ form.observacao.id_for_label }}" class="form-control">{{ form.observacao.value|default:'' }}</textarea>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i>
+                        {% if form.instance.pk %}Atualizar{% else %}Registrar{% endif %}
+                    </button>
+                    <a href="{% url 'estoque:movimentacoes_list' %}" class="btn btn-secondary ms-2">
+                        <i class="bi bi-x-circle"></i>
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
