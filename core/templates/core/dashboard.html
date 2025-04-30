@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - FControl{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Cabeçalho com mensagem de boas-vindas -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3">Bem-vindo(a) ao FControl, {{ user.first_name|default:user.username }}</h1>
+        <div class="text-end">
+            <span class="badge bg-light text-dark">
+                <i class="bi bi-calendar-event me-1"></i>
+                {{ user.last_login|date:"d/m/Y H:i" }}
+            </span>
+        </div>
+    </div>
+
+    <!-- Mensagens de alerta/notificação -->
+    {% if messages %}
+    <div class="messages mb-4">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Cartões com estatísticas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-left-primary shadow h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col me-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Ordens em Produção</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.ordens_em_producao }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-tools fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-success shadow h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col me-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Vendas de Hoje</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.vendas_hoje }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-cart fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-info shadow h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col me-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Alertas de Estoque</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.alertas_estoque }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-exclamation-triangle fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card border-left-warning shadow h-100">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col me-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Contas Vencidas</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ stats.contas_vencidas }}</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="bi bi-calendar-x fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Atividades recentes -->
+    <div class="row mb-4">
+        <!-- Ordens recentes -->
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold">Ordens de Produção Recentes</h6>
+                    <a href="{% url 'producao:lista_ordens' %}" class="btn btn-sm btn-primary">Ver todas</a>
+                </div>
+                <div class="card-body">
+                    {% if ordens_recentes %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless">
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Quantidade</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ordem in ordens_recentes %}
+                                <tr>
+                                    <td>{{ ordem.produto.nome }}</td>
+                                    <td>{{ ordem.quantidade }}</td>
+                                    <td>
+                                        {% if ordem.status == 'EM_PRODUCAO' %}
+                                        <span class="badge bg-primary">Em Produção</span>
+                                        {% elif ordem.status == 'FINALIZADA' %}
+                                        <span class="badge bg-success">Finalizada</span>
+                                        {% elif ordem.status == 'PLANEJADA' %}
+                                        <span class="badge bg-info">Planejada</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Cancelada</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Nenhuma ordem de produção recente.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Vendas recentes -->
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                    <h6 class="m-0 font-weight-bold">Vendas Recentes</h6>
+                    <a href="{% url 'comercial:pedido_list' %}" class="btn btn-sm btn-primary">Ver todas</a>
+                </div>
+                <div class="card-body">
+                    {% if vendas_recentes %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-borderless">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Valor</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for venda in vendas_recentes %}
+                                <tr>
+                                    <td>{{ venda.cliente.nome }}</td>
+                                    <td>R$ {{ venda.valor_total|floatformat:2 }}</td>
+                                    <td>
+                                        {% if venda.status == 'ABERTA' %}
+                                        <span class="badge bg-warning">Aberta</span>
+                                        {% elif venda.status == 'FECHADA' %}
+                                        <span class="badge bg-success">Fechada</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Cancelada</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Nenhuma venda recente.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Links rápidos para os módulos -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold">Acesso rápido</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'producao:dashboard' %}" class="btn btn-lg btn-outline-primary w-100 p-4">
+                                <i class="bi bi-tools d-block mb-2" style="font-size: 2rem;"></i>
+                                Produção
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'estoque:dashboard' %}" class="btn btn-lg btn-outline-success w-100 p-4">
+                                <i class="bi bi-box-seam d-block mb-2" style="font-size: 2rem;"></i>
+                                Estoque
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'comercial:dashboard' %}" class="btn btn-lg btn-outline-info w-100 p-4">
+                                <i class="bi bi-shop d-block mb-2" style="font-size: 2rem;"></i>
+                                Comercial
+                            </a>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <a href="{% url 'financeiro:dashboard' %}" class="btn btn-lg btn-outline-warning w-100 p-4">
+                                <i class="bi bi-cash-coin d-block mb-2" style="font-size: 2rem;"></i>
+                                Financeiro
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

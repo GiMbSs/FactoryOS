@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - FControl{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white text-center py-3">
+                <h2 class="mb-0">FControl</h2>
+                <p class="mb-0">Sistema de Gestão de Produção</p>
+            </div>
+            <div class="card-body p-4">
+                {% if form.errors %}
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Usuário ou senha incorretos. Por favor, tente novamente.
+                </div>
+                {% endif %}
+                
+                {% if next %}
+                    {% if user.is_authenticated %}
+                    <div class="alert alert-warning" role="alert">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        Sua conta não possui permissão para acessar essa página.
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info" role="alert">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        Por favor, faça login para continuar.
+                    </div>
+                    {% endif %}
+                {% endif %}
+
+                <form method="post" action="{% url 'core:login' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="id_username" class="form-label">Usuário</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                            <input type="text" name="username" id="id_username" class="form-control" placeholder="Nome de usuário" required autofocus>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="id_password" class="form-label">Senha</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                            <input type="password" name="password" id="id_password" class="form-control" placeholder="Senha" required>
+                        </div>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember_me" name="remember_me">
+                        <label class="form-check-label" for="remember_me">Lembrar-me</label>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
+                        </button>
+                    </div>
+                    <input type="hidden" name="next" value="{{ next }}">
+                </form>
+            </div>
+            <div class="card-footer bg-light text-center py-3">
+                <a href="#" class="text-decoration-none">Esqueceu sua senha?</a>
+            </div>
+        </div>
+        <div class="text-center mt-3 text-muted">
+            <small>© 2025 FControl - Todos os direitos reservados</small>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -162,3 +162,18 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Sistema title configuration
 SYSTEM_TITLE = env('SYSTEM_TITLE', default='Produtos São Lucas')
+
+# Autenticação
+LOGIN_URL = 'core:login'
+LOGIN_REDIRECT_URL = 'core:dashboard' 
+LOGOUT_REDIRECT_URL = 'core:login'
+
+# Mensagens
+from django.contrib.messages import constants as messages
+MESSAGE_TAGS = {
+    messages.DEBUG: 'secondary',
+    messages.INFO: 'info',
+    messages.SUCCESS: 'success',
+    messages.WARNING: 'warning',
+    messages.ERROR: 'danger',
+}

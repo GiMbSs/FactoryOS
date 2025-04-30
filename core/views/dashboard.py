@@ -92,3 +92,38 @@ class HomeView(TemplateView):
         context['fornecedores_count'] = Fornecedor.objects.count()
 
         return context
+
+class DashboardView(TemplateView):
+    """
+    Dashboard interno do sistema, acessível após o login.
+    Ponto de entrada principal para usuários autenticados.
+    """
+    template_name = 'core/dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Adicionar dados do usuário ao contexto
+        context['user'] = self.request.user
+        today = timezone.now().date()
+        
+        # Resumo de estatísticas para o dashboard
+        context['stats'] = {
+            'ordens_em_producao': OrdemProducao.objects.filter(status='EM_PRODUCAO').count(),
+            'alertas_estoque': SaldoEstoque.objects.filter(
+                quantidade_atual__lt=SaldoEstoque.objects.values('materia_prima__estoque_minimo')
+            ).count(),
+            'vendas_hoje': Venda.objects.filter(
+                data_venda__date=today
+            ).count(),
+            'contas_vencidas': ContaPagar.objects.filter(
+                status='PENDENTE', 
+                data_vencimento__lt=today
+            ).count()
+        }
+        
+        # Lista de atividades recentes
+        context['ordens_recentes'] = OrdemProducao.objects.all().order_by('-id')[:5]
+        context['vendas_recentes'] = Venda.objects.all().order_by('-data_venda')[:5]
+        
+        return context
