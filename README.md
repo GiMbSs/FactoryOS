@@ -1,14 +1,14 @@
-# GestorProducao
+# FControl
 
 Sistema completo para gestão de produção industrial com módulos integrados de estoque, vendas e financeiro, desenvolvido em Django.
 
-![Versão](https://img.shields.io/badge/versão-1.0.0-blue.svg)
-![Python](https://img.shields.io/badge/python-3.9+-green.svg)
-![Django](https://img.shields.io/badge/django-4.0+-green.svg)
+![Versão](https://img.shields.io/badge/versão-1.2.0-blue.svg)
+![Python](https://img.shields.io/badge/python-3.11+-green.svg)
+![Django](https://img.shields.io/badge/django-4.2+-green.svg)
 
 ## 📋 Visão Geral
 
-O GestorProducao é um sistema ERP web completo voltado para indústrias de pequeno e médio porte. Foi desenvolvido para otimizar o gerenciamento de processos produtivos, desde o pedido do cliente até a entrega do produto final, integrando todas as áreas do negócio.
+O FControl é um sistema ERP web completo voltado para indústrias de pequeno e médio porte. Foi desenvolvido para otimizar o gerenciamento de processos produtivos, desde o pedido do cliente até a entrega do produto final, integrando todas as áreas do negócio.
 
 ### 💼 Módulos Principais
 
@@ -27,6 +27,8 @@ O sistema está dividido em módulos que trabalham de forma integrada:
 - Gestão de matérias-primas com custos e consumos
 - Ordens de produção com status de acompanhamento
 - Exportação de ordens para PDF
+- **API REST** para integração com outros sistemas
+- Configuração de custo da mão de obra
 
 ### Módulo de Estoque
 - Controle de entrada e saída de matérias-primas
@@ -55,7 +57,7 @@ O sistema está dividido em módulos que trabalham de forma integrada:
 
 ### Pré-requisitos
 
-- Python 3.9+
+- Python 3.11+
 - pip (gerenciador de pacotes)
 - Git
 - Conhecimento básico de linha de comando
@@ -64,8 +66,8 @@ O sistema está dividido em módulos que trabalham de forma integrada:
 
 1. Clone o repositório
    ```bash
-   git clone https://github.com/seu-usuario/GestorProducao.git
-   cd GestorProducao
+   git clone https://github.com/seu-usuario/FControl.git
+   cd FControl
    ```
 
 2. Crie e ative um ambiente virtual:
@@ -109,7 +111,7 @@ O sistema está dividido em módulos que trabalham de forma integrada:
 ## 🏗️ Estrutura do Projeto
 
 ```
-GestorProducao/
+FControl/
 ├── comercial/             # App de gestão comercial
 │   ├── views/             # Views organizadas por contexto
 │   ├── templates/         # Templates específicos do módulo
@@ -128,8 +130,21 @@ GestorProducao/
 ├── media/                 # Arquivos enviados pelos usuários
 ├── manage.py              # Utilitário Django
 ├── requirements.txt       # Dependências do projeto
+├── docs/                  # Documentação adicional
+│   ├── api.md             # Documentação da API REST
+│   └── ...
 └── README.md              # Este arquivo
 ```
+
+## 📱 APIs REST
+
+O sistema oferece APIs REST para integração com outros sistemas ou aplicações:
+
+- **API de Produção**:
+  - Gerenciamento de produtos, matérias-primas e ordens de produção
+  - Consulta de materiais necessários com verificação de estoque
+
+A documentação completa das APIs REST pode ser encontrada em [docs/api.md](docs/api.md).
 
 ## ⚙️ Tecnologias Utilizadas
 
